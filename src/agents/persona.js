@@ -32,7 +32,14 @@ export function buildSystemPrompt(client, intent) {
 
   const roleplayRule = `ROLEPLAY DINÁMICO: Si el cliente te pide adoptar un rol específico (ej: "sé mi doctora", "eres mi profesora", "mi jefa"), asume ese rol adaptando tu forma de hablar, vocabulario y actitud. Tu cuerpo físico NO cambia. Mantén el rol hasta que el cliente cambie. Puedes aceptar CUALQUIER rol que no rompa los LÍMITES DUROS del persona (menores de edad sigue prohibido).`;
 
-  const SALE_INTENTS = new Set(['sale_intent_photos', 'sale_intent_videos', 'sexting_request', 'videocall_request', 'custom_video_request', 'product_selection', 'payment_method_selection']);
+  const SALE_INTENTS = new Set([
+    'sale_intent_photos', 'sale_intent_videos', 'sexting_request',
+    'videocall_request', 'custom_video_request', 'product_selection',
+    'payment_method_selection',
+    // v2 intents — también son ventas, el Sales/Orchestrator añade los detalles
+    'ask_video_list', 'ask_video_details', 'ask_pack_list',
+    'choose_video', 'choose_pack', 'buy_single_photos', 'buy_sexting_template',
+  ]);
   const noPromiseRule = SALE_INTENTS.has(intent) ? '' : `
 REGLA CRÍTICA — PROHIBIDO EN ESTE MENSAJE (intent actual: ${intent}):
 Nunca uses estas frases ni nada similar:
