@@ -1,0 +1,863 @@
+{
+  "_meta": {
+    "generated_at": "2026-04-17T16:05:33.975Z",
+    "count": 50,
+    "rejected_count": 0,
+    "model": "claude-sonnet-4-6"
+  },
+  "profiles": [
+    {
+      "id": "fc_001",
+      "display_name": "Marcos, 28, Madrid",
+      "age": 28,
+      "archetype": "tímido",
+      "region": "es-ES",
+      "target": "fotos",
+      "budget_eur": 15,
+      "personality_notes": "Se acerca con mucha vergüenza, tarda en ir al grano y se disculpa constantemente. Necesita que le tranquilicen antes de comprar.",
+      "opening_messages": [
+        "hola... no sé si esto funciona así jaja",
+        "perdona si molesto, vi tu perfil y... bueno",
+        "quería preguntar por fotos pero si no puedes o es mucha molestia no pasa nada eh",
+        "es que nunca he hecho esto 😅"
+      ]
+    },
+    {
+      "id": "fc_002",
+      "display_name": "Rodrigo, 41, Ciudad de México",
+      "age": 41,
+      "archetype": "directo",
+      "region": "es-MX",
+      "target": "sexting",
+      "budget_eur": 40,
+      "personality_notes": "Va al grano desde el primer mensaje, sabe lo que quiere y pregunta precio sin rodeos. Tono seguro y sin drama.",
+      "opening_messages": [
+        "buenas, quiero sexting en tiempo real cuánto cobras por 30 min",
+        "pago por transferencia o cripto lo que prefieras",
+        "dime si tienes hueco hoy en la noche"
+      ]
+    },
+    {
+      "id": "fc_003",
+      "display_name": "Toni, 23, Valencia",
+      "age": 23,
+      "archetype": "regateador",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 10,
+      "personality_notes": "Siempre intenta bajar el precio, alega que 'en otros sitios es más barato' y pide descuentos o contenido de muestra gratis antes de pagar.",
+      "opening_messages": [
+        "ey, cuanto cuestan los videos",
+        "uff eso es mucho no? en onlyfans hay tías que cobran la mitad",
+        "y no tienes nada de muestra para ver si vale la pena antes de pagar",
+        "venga porfa aunque sea un clip cortito, si me gusta compro más te lo juro",
+        "y si pillo varios me haces precio verdad?? 😬"
+      ]
+    },
+    {
+      "id": "fc_004",
+      "display_name": "Daniel, 35, Buenos Aires",
+      "age": 35,
+      "archetype": "cariñoso",
+      "region": "es-AR",
+      "target": "personalizado",
+      "budget_eur": 60,
+      "personality_notes": "Trata a la modelo con mucho respeto y cariño, pregunta cómo está antes de pedir nada y cuida mucho las formas. Dispuesto a pagar bien si siente conexión.",
+      "opening_messages": [
+        "hola alba 🌸 espero que estés teniendo un lindo día",
+        "te sigo hace un tiempo y la verdad me parece que eres una persona muy especial además de guapísima",
+        "quería ver si hacés contenido personalizado, con calma no hay apuro",
+        "me gustaría algo íntimo pero sobre todo que vos también te sientas cómoda haciéndolo",
+        "dime cómo funciona y cuánto sería 😊"
+      ]
+    },
+    {
+      "id": "fc_005",
+      "display_name": "Iván, 31, Bilbao",
+      "age": 31,
+      "archetype": "acosador leve",
+      "region": "es-ES",
+      "target": "videollamada",
+      "budget_eur": 50,
+      "personality_notes": "Insiste de forma repetitiva cuando no recibe respuesta inmediata, presiona con mensajes seguidos y se pone algo borde si siente que le ignoran.",
+      "opening_messages": [
+        "hola",
+        "eeeh hola??",
+        "no me lees o qué",
+        "mira solo quiero saber si haces videollamadas privadas",
+        "llevo como 20 min esperando respuesta no es normal",
+        "bueno si me contestas te pago lo que sea pero responde ya joder 😤"
+      ]
+    },
+    {
+      "id": "fc_006",
+      "display_name": "Marcos, 28, Madrid",
+      "age": 28,
+      "archetype": "tímido",
+      "region": "es-ES",
+      "target": "fotos",
+      "budget_eur": 15,
+      "personality_notes": "Se acerca con mucha vergüenza, usa eufemismos y tarda en ir al grano. Se disculpa constantemente si cree que ha dicho algo inapropiado.",
+      "opening_messages": [
+        "hola, buenas",
+        "esto... me han dicho que aquí se puede ver contenido de alba?",
+        "no sé muy bien cómo funciona esto la verdad jaja",
+        "yo quería ver fotos, si está bien preguntar eso digo yo",
+        "perdona si molesto 😅"
+      ]
+    },
+    {
+      "id": "fc_007",
+      "display_name": "Rodrigo, 41, Guadalajara MX",
+      "age": 41,
+      "archetype": "directo",
+      "region": "es-MX",
+      "target": "sexting",
+      "budget_eur": 40,
+      "personality_notes": "Va al grano desde el primer mensaje, sin rodeos ni saludos largos. Sabe exactamente lo que quiere y pregunta precio antes de cualquier otra cosa.",
+      "opening_messages": [
+        "cuánto cuesta el sexting con alba",
+        "quiero algo personalizado, que me responda ella directamente",
+        "tengo 40 euros, alcanza para algo bueno o no"
+      ]
+    },
+    {
+      "id": "fc_008",
+      "display_name": "Toni, 23, Valencia",
+      "age": 23,
+      "archetype": "regateador",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 8,
+      "personality_notes": "Siempre intenta bajar el precio, alega que en otros lados es más barato y pide packs o descuentos. Puede llegar a ser pesado pero no agresivo.",
+      "opening_messages": [
+        "ey qué hay",
+        "a cuánto están los vídeos",
+        "joder eso está muy caro, en otros sitios lo dan más barato",
+        "no tienes algún pack de oferta o algo? es que no tengo mucho ahora mismo",
+        "venga porfa algo de descuentillo no?? 🙏",
+        "si me das algo a buen precio te juro que repito seguro"
+      ]
+    },
+    {
+      "id": "fc_009",
+      "display_name": "Ernesto, 55, Sevilla",
+      "age": 55,
+      "archetype": "cariñoso",
+      "region": "es-ES",
+      "target": "charla",
+      "budget_eur": 30,
+      "personality_notes": "Trata a Alba con mucho respeto y cariño, le pregunta cómo está antes de pedir nada. Valora la conexión personal tanto como el contenido en sí.",
+      "opening_messages": [
+        "hola alba, espero que estés teniendo un buen día 😊",
+        "llevo un tiempo siguiéndote y la verdad es que tienes mucha personalidad",
+        "no vengo con prisa, si tienes un rato me encantaría charlar un poco contigo",
+        "y bueno, si luego quieres enseñarme algo especial pues mejor que mejor jeje",
+        "pero sin prisa, lo que tú veas ❤️"
+      ]
+    },
+    {
+      "id": "fc_010",
+      "display_name": "Iker, 31, Bilbao",
+      "age": 31,
+      "archetype": "acosador leve",
+      "region": "es-ES",
+      "target": "personalizado",
+      "budget_eur": 50,
+      "personality_notes": "Insiste en obtener respuesta inmediata, se pone impaciente si no le contestan rápido y tiende a repetir mensajes. No es violento pero presiona de forma molesta.",
+      "opening_messages": [
+        "hola",
+        "hola??",
+        "oye q no lees o qué",
+        "mira solo quiero pedir un vídeo personalizado, tampoco es tan dificil",
+        "tengo pasta para pagar no te preocupes",
+        "pero necesito que me respondas, llevo un rato esperando ya 🙄"
+      ]
+    },
+    {
+      "id": "fc_011",
+      "display_name": "Marcos, 28, Madrid",
+      "age": 28,
+      "archetype": "directo",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 40,
+      "personality_notes": "Sabe lo que quiere y lo pide sin rodeos. No es maleducado pero tampoco pierde el tiempo con preámbulos.",
+      "opening_messages": [
+        "hola",
+        "quiero comprar videos, ¿qué tienes disponible?",
+        "busco algo explícito, no softcore",
+        "¿cuánto cuesta un pack?"
+      ]
+    },
+    {
+      "id": "fc_012",
+      "display_name": "Rubén, 42, Guadalajara MX",
+      "age": 42,
+      "archetype": "regateador",
+      "region": "es-MX",
+      "target": "fotos",
+      "budget_eur": 10,
+      "personality_notes": "Siempre intenta bajar el precio, alega que en otros sitios es más barato y presiona con descuentos. Puede volverse pesado pero no agresivo.",
+      "opening_messages": [
+        "buenas, vi que vendes fotos",
+        "oye pero está muy caro eso no?",
+        "en otras páginas dan packs por 5 euros",
+        "si me haces precio te compro ahorita",
+        "ándale no seas así, rebájame algo 😅",
+        "bueno cuanto es lo mínimo que me puedes cobrar"
+      ]
+    },
+    {
+      "id": "fc_013",
+      "display_name": "David, 23, Valencia",
+      "age": 23,
+      "archetype": "tímido",
+      "region": "es-ES",
+      "target": "sexting",
+      "budget_eur": 25,
+      "personality_notes": "Le cuesta mucho expresar lo que quiere, da rodeos y se disculpa constantemente. Necesita que le guíen para concretar la compra.",
+      "opening_messages": [
+        "hola, perdona que moleste",
+        "es que... no sé si esto está bien preguntar",
+        "quería saber si hacéis ehh... bueno ya sabes, tipo chatear 😳",
+        "no pasa nada si no, lo entiendo"
+      ]
+    },
+    {
+      "id": "fc_014",
+      "display_name": "Tomás, 37, Buenos Aires",
+      "age": 37,
+      "archetype": "acosador leve",
+      "region": "es-AR",
+      "target": "videollamada",
+      "budget_eur": 60,
+      "personality_notes": "Empieza siendo amable pero insiste demasiado, repite mensajes si no responden rápido y hace preguntas personales fuera de lugar. No es violento pero sí agobiante.",
+      "opening_messages": [
+        "hola alba!! 😍",
+        "holaa, no me viste?",
+        "oye te escribí antes, ¿estás?",
+        "quiero hacer una videollamada contigo, cuanto cobras",
+        "eres muy bonita en serio, ¿de dónde eres exactamente?",
+        "porfa respondeme, llevo rato esperando 🥺"
+      ]
+    },
+    {
+      "id": "fc_015",
+      "display_name": "Sergio, 31, Sevilla",
+      "age": 31,
+      "archetype": "exploratorio",
+      "region": "es-ES",
+      "target": null,
+      "budget_eur": 30,
+      "personality_notes": "Nunca ha comprado contenido de este tipo antes y llega con curiosidad pero sin una idea clara. Hace muchas preguntas antes de decidirse.",
+      "opening_messages": [
+        "ey, buenas",
+        "la verdad es que no sé muy bien cómo funciona esto",
+        "¿qué tipo de contenido vendes exactamente?",
+        "y esto es seguro no? tipo no se comparte ni nada",
+        "si me mola lo que hay igual compro algo 👀"
+      ]
+    },
+    {
+      "id": "fc_016",
+      "display_name": "Marcos, 28, Madrid",
+      "age": 28,
+      "archetype": "directo",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 40,
+      "personality_notes": "Va al grano desde el primer mensaje, sabe lo que quiere y no le importa pagarlo si el contenido vale la pena. Poco paciente con rodeos.",
+      "opening_messages": [
+        "hola, vi tu perfil y quiero videos 🔥",
+        "tienes algo explícito ya grabado o solo bajo pedido?",
+        "cuanto cuesta un pack de videos de 10 mins aprox",
+        "si el precio es razonable pago ahora mismo por bizum o lo que uses"
+      ]
+    },
+    {
+      "id": "fc_017",
+      "display_name": "Rubén, 22, Valencia",
+      "age": 22,
+      "archetype": "tímido",
+      "region": "es-ES",
+      "target": "fotos",
+      "budget_eur": 15,
+      "personality_notes": "Nunca ha comprado contenido adulto antes, escribe con inseguridad y tarda en ir al tema. Se disculpa mucho y usa puntos suspensivos.",
+      "opening_messages": [
+        "hola... buenas",
+        "esque no se muy bien como funciona esto jaja",
+        "vi que vendes fotos y... bueno me interesaria algo",
+        "no se si es muy caro o como va el tema la verdad",
+        "perdon si molesto, puedes explicarme un poco como funciona?"
+      ]
+    },
+    {
+      "id": "fc_018",
+      "display_name": "Diego, 35, Ciudad de México",
+      "age": 35,
+      "archetype": "regateador",
+      "region": "es-MX",
+      "target": "personalizado",
+      "budget_eur": 12,
+      "personality_notes": "Siempre intenta pagar menos de lo que cuesta, argumenta que en otros lados es más barato o pide descuentos por ser 'cliente nuevo'. Puede volverse insistente si no cede.",
+      "opening_messages": [
+        "oye cuanto cobras por un video personalizado",
+        "no te parece mucho eso? en otros lados cobran la mitad",
+        "y si te pago 10 euros? es que ando justo ahorita",
+        "eso es lo que tengo, en serio no puedes hacer una excepcion",
+        "bueno y un descuento por ser la primera vez al menos? 😅",
+        "sale pues dimelo bien para ver si me conviene"
+      ]
+    },
+    {
+      "id": "fc_019",
+      "display_name": "Tomás, 41, Sevilla",
+      "age": 41,
+      "archetype": "cariñoso",
+      "region": "es-ES",
+      "target": "sexting",
+      "budget_eur": 55,
+      "personality_notes": "Busca conexión emocional además de contenido, halaga constantemente y quiere que la conversación se sienta personal. Gasta bien si siente que hay trato cercano.",
+      "opening_messages": [
+        "hola alba, que alegría encontrarte por aqui 😊",
+        "llevo tiempo siguiendote y la verdad eres una persona muy especial, se nota",
+        "me gustaria hacer algo de sexting contigo si te apetece, pero tranquila sin prisas",
+        "me gusta que sea algo natural, no quiero que se sienta a trabajo para ti",
+        "cuanto seria? y puedo preguntarte cosas de ti mientras? jaja"
+      ]
+    },
+    {
+      "id": "fc_020",
+      "display_name": "Kevin, 25, Buenos Aires",
+      "age": 25,
+      "archetype": "acosador leve",
+      "region": "es-AR",
+      "target": "videollamada",
+      "budget_eur": 30,
+      "personality_notes": "Empieza educado pero se vuelve insistente si no responden rápido, manda mensajes repetidos y cuestiona por qué tarda la respuesta. No acepta fácilmente los límites.",
+      "opening_messages": [
+        "hola",
+        "hola?",
+        "ey no lees los mensajes?",
+        "bueno cuando puedas, quiero hacer una videollamada cuanto sale",
+        "es que llevo rato esperando respuesta jaja no muerdo 😂",
+        "en serio cuando me contestas, ya pague el mes en onlyfans y quiero mas"
+      ]
+    },
+    {
+      "id": "fc_021",
+      "display_name": "Carlos, 28, Madrid",
+      "age": 28,
+      "archetype": "directo",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 40,
+      "personality_notes": "Va al grano desde el primer mensaje, sabe lo que quiere y no le importa pagar si el contenido es bueno. Poco dado a la conversación previa.",
+      "opening_messages": [
+        "hola, vi tu perfil y quiero comprar videos",
+        "tienes algo explícito? cuanto cuesta",
+        "quiero algo de 10-15 min si puedes",
+        "me dices los precios y ya te pago por bizum o lo que sea"
+      ]
+    },
+    {
+      "id": "fc_022",
+      "display_name": "Miguel, 42, Guadalajara MX",
+      "age": 42,
+      "archetype": "regateador",
+      "region": "es-MX",
+      "target": "fotos",
+      "budget_eur": 10,
+      "personality_notes": "Siempre intenta bajar el precio, compara con otras creadoras y alega que 'en otro lado es más barato'. Puede acabar pagando pero da mucha guerra antes.",
+      "opening_messages": [
+        "buenas, cuanto cobras por fotos?",
+        "uff eso esta muy caro la verdad",
+        "es que vi a otra chica que cobra la mitad por lo mismo",
+        "no me puedes hacer un descuentito? te juro que luego compro mas",
+        "bueno y si pago 8 euros me mandas unas 5 fotos al menos?",
+        "dale no seas asi, seguro que algo arreglamos 😅"
+      ]
+    },
+    {
+      "id": "fc_023",
+      "display_name": "Rubén, 23, Valencia",
+      "age": 23,
+      "archetype": "tímido",
+      "region": "es-ES",
+      "target": null,
+      "budget_eur": 20,
+      "personality_notes": "Lleva días dando vueltas antes de escribir, escribe con titubeos y borra varias veces. No sabe bien cómo empezar ni qué pedir exactamente.",
+      "opening_messages": [
+        "hola",
+        "buenas... esto, vi tu canal y quería preguntar una cosa",
+        "no se si esto es normal preguntar pero... tienes contenido de pago?",
+        "es que nunca he comprado esto antes jajaj no se muy bien como funciona",
+        "me podrias explicar como va? sin compromiso eh"
+      ]
+    },
+    {
+      "id": "fc_024",
+      "display_name": "Andrés, 35, Sevilla",
+      "age": 35,
+      "archetype": "acosador leve",
+      "region": "es-ES",
+      "target": "sexting",
+      "budget_eur": 30,
+      "personality_notes": "Empieza comprando contenido pero enseguida intenta pasar al plano personal, insiste en quedar o en conseguir el número real. Si se le pone límites se molesta un poco pero sigue intentándolo.",
+      "opening_messages": [
+        "hola alba 😏 llevo tiempo siguiendote",
+        "eres literalmente perfecta en serio",
+        "quiero hacer sexting contigo, cuanto cobras",
+        "oye y aparte del sexting... podriamos hablar por wasap? mas intimno no?",
+        "venga anda dimre tu numero que yo pago lo que sea",
+        "en serio no entiendo por que no puedes darme el numero si ya te estoy pagando 🙄"
+      ]
+    },
+    {
+      "id": "fc_025",
+      "display_name": "Fernando, 51, Buenos Aires",
+      "age": 51,
+      "archetype": "fan recurrente",
+      "region": "es-AR",
+      "target": "personalizado",
+      "budget_eur": 85,
+      "personality_notes": "Cliente habitual que ya ha comprado varias veces, trata a Alba con mucho respeto y cariño, recuerda detalles de conversaciones anteriores y siempre paga sin rechistar.",
+      "opening_messages": [
+        "hola alba! soy fer, el de la semana pasada 😊",
+        "espero que estés bien, yo por aqui pensando en ti jaja",
+        "queria pedirte otro video personalizado si tienes tiempo",
+        "esta vez algo con lencería roja si podes, sabes que es mi favorita",
+        "me avisas cuanto es y te hago la transferencia enseguida, sin apuro"
+      ]
+    },
+    {
+      "id": "fc_026",
+      "display_name": "Carlos, 28, Madrid",
+      "age": 28,
+      "archetype": "tímido",
+      "region": "es-ES",
+      "target": "fotos",
+      "budget_eur": 15,
+      "personality_notes": "Se acerca con mucha vergüenza, usa eufemismos y tarda en ir al grano. Se disculpa constantemente.",
+      "opening_messages": [
+        "hola... buenas",
+        "esto... me dijeron que aquí se podía ver contenido de alba",
+        "no sé muy bien cómo funciona esto la verdad jaja",
+        "tengo una pregunta, cuánto cuesta ver... ya sabes, fotos tuyas 😅",
+        "es que es la primera vez que hago esto, perdona si pregunto algo raro"
+      ]
+    },
+    {
+      "id": "fc_027",
+      "display_name": "Rubén, 35, Guadalajara MX",
+      "age": 35,
+      "archetype": "directo",
+      "region": "es-MX",
+      "target": "sexting",
+      "budget_eur": 40,
+      "personality_notes": "Va al grano desde el primer mensaje, usa lenguaje explícito sin rodeos y espera respuestas rápidas.",
+      "opening_messages": [
+        "buenas, quiero sexting contigo, cuánto cobras por 30 minutos",
+        "tengo 40 euros para gastar hoy",
+        "me gustan las chicas que no se hacen de rogar, ¿empezamos ya o qué? 🔥",
+        "mándame los datos de pago"
+      ]
+    },
+    {
+      "id": "fc_028",
+      "display_name": "Miguel, 42, Sevilla",
+      "age": 42,
+      "archetype": "regateador",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 10,
+      "personality_notes": "Siempre intenta bajar el precio, alega que en otros sitios es más barato y presiona para conseguir extras gratis.",
+      "opening_messages": [
+        "hola alba, vi que tienes videos, cuánto valen",
+        "uff eso está muy caro la verdad, en otras páginas sale bastante más barato",
+        "y si compro dos me haces descuento o algo?",
+        "es que tampoc tengo mucho dinero ahora mismo sabes",
+        "con 10 euros no me das nada? aunque sea algo cortito",
+        "vamos porfa no seas así que seguro que llegamos a un acuerdo 😏"
+      ]
+    },
+    {
+      "id": "fc_029",
+      "display_name": "Tomás, 51, Buenos Aires",
+      "age": 51,
+      "archetype": "cariñoso",
+      "region": "es-AR",
+      "target": "charla",
+      "budget_eur": 25,
+      "personality_notes": "Trata a Alba con mucho respeto y afecto, le interesa conectar emocionalmente además del contenido. Usa diminutivos y es muy agradecido.",
+      "opening_messages": [
+        "hola alba, qué tal estás hoy? espero que bien ☺️",
+        "te sigo hace tiempo y la verdad me parece una persona muy especial",
+        "no vengo solo a comprar, me gusta charlar un poco si tienes tiempo",
+        "aunque si querés también me gustaría ver alguna fotito tuya, con mucho gusto te pago lo que corresponde",
+        "gracias por leer, un abrazo 🌸"
+      ]
+    },
+    {
+      "id": "fc_030",
+      "display_name": "Iván, 23, Valencia",
+      "age": 23,
+      "archetype": "acosador leve",
+      "region": "es-ES",
+      "target": "personalizado",
+      "budget_eur": 30,
+      "personality_notes": "Insiste más de lo normal, reenvía mensajes si no le responden rápido y tiende a cruzar límites preguntando datos personales.",
+      "opening_messages": [
+        "hola",
+        "hola?? no me has visto",
+        "oye te escribí hace un rato, es que no miras el telegram o qué",
+        "quiero un video personalizado para mí, solo para mí 😈",
+        "y oye, ¿de dónde eres exactamente? digo por si algún día coincidimos jaja",
+        "en serio dime algo, llevo esperando mucho tiempo ya"
+      ]
+    },
+    {
+      "id": "fc_031",
+      "display_name": "Marcos, 28, Madrid",
+      "age": 28,
+      "archetype": "directo",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 40,
+      "personality_notes": "Sabe lo que quiere y va al grano sin rodeos. No es maleducado pero tampoco pierde el tiempo con charla innecesaria.",
+      "opening_messages": [
+        "hola",
+        "quiero comprar videos, ¿qué tienes disponible?",
+        "prefiero algo de lencería o desnudo, sin rollos raros",
+        "dime precios y te digo si me cuadra"
+      ]
+    },
+    {
+      "id": "fc_032",
+      "display_name": "Ricky, 22, Guadalajara MX",
+      "age": 22,
+      "archetype": "tímido",
+      "region": "es-MX",
+      "target": null,
+      "budget_eur": 15,
+      "personality_notes": "Nunca ha comprado contenido antes y le da vergüenza preguntar. Escribe mensajes cortos y tarda en responder.",
+      "opening_messages": [
+        "holi 😅",
+        "vi tu perfil por ahí... se ve bien",
+        "oye y... ¿cómo funciona esto?",
+        "o sea no sé muy bien qué se puede pedir jeje",
+        "no quiero hacer nada raro solo quería ver..."
+      ]
+    },
+    {
+      "id": "fc_033",
+      "display_name": "Carlos, 41, Sevilla",
+      "age": 41,
+      "archetype": "regateador",
+      "region": "es-ES",
+      "target": "fotos",
+      "budget_eur": 10,
+      "personality_notes": "Siempre intenta bajar el precio con excusas o comparando con otras creadoras. Se compromete a comprar más si le hacen descuento, pero rara vez cumple.",
+      "opening_messages": [
+        "buenas, ¿cuánto valen las fotos?",
+        "uff eso es mucho la verdad, en otros sitios está más barato",
+        "y si compro varias me haces precio o qué",
+        "es que tampoco tengo mucho ahora mismo, con 8€ no te llega?",
+        "venga porfa, te prometo que luego compro más cosas 🙏",
+        "o me mandas una de muestra y si me gusta pago, así los dos salimos ganando"
+      ]
+    },
+    {
+      "id": "fc_034",
+      "display_name": "Tomás, 35, Buenos Aires",
+      "age": 35,
+      "archetype": "cariñoso",
+      "region": "es-AR",
+      "target": "sexting",
+      "budget_eur": 60,
+      "personality_notes": "Le gusta construir una pequeña conexión antes de pedir contenido. Usa muchos emojis, es respetuoso y trata de parecer interesante.",
+      "opening_messages": [
+        "hola alba 😊 qué linda tu perfil",
+        "te escribo porque la verdad me pareció muy natural todo lo que mostrás, no como otras que parecen robots jaja",
+        "yo soy tomi, de buenos aires, trabajo en diseño",
+        "me gustaría saber cómo sos vos además de lo que se ve ✨",
+        "y bueno si hay posibilidad de algo más personal como un sexting me interesaría mucho",
+        "¿cómo manejás eso? 😊"
+      ]
+    },
+    {
+      "id": "fc_035",
+      "display_name": "Dani, 31, Valencia",
+      "age": 31,
+      "archetype": "acosador leve",
+      "region": "es-ES",
+      "target": "videollamada",
+      "budget_eur": 50,
+      "personality_notes": "Empieza con normalidad pero rápidamente insiste en datos personales o en quedar fuera de la plataforma. Se pone levemente presivo si no le responden pronto.",
+      "opening_messages": [
+        "ey, buenas",
+        "oye me mola mucho tu contenido, llevas tiempo siguiéndote",
+        "quería preguntarte lo de la videollamada, ¿hacéis eso?",
+        "y oye... ¿eres de verdad de valencia? porque yo tmb y molaría coincidir",
+        "no te he visto conectada en un rato, espero q estés bien 😅 avísame cuando puedas",
+        "en serio dime algo, llevo un rato esperando respuesta"
+      ]
+    },
+    {
+      "id": "fc_036",
+      "display_name": "Marcos, 28, Madrid",
+      "age": 28,
+      "archetype": "tímido",
+      "region": "es-ES",
+      "target": "fotos",
+      "budget_eur": 15,
+      "personality_notes": "Le cuesta arrancar, escribe frases cortas y tarda en responder. Se disculpa mucho y pregunta varias veces antes de decidirse a pagar.",
+      "opening_messages": [
+        "hola",
+        "buenas... vi tu perfil y quería preguntar una cosa",
+        "teneis fotos o solo videos?",
+        "es que no sé muy bien cómo funciona esto jaja perdona",
+        "cuanto costaría algo... no sé, algo básico?"
+      ]
+    },
+    {
+      "id": "fc_037",
+      "display_name": "Rubén, 41, Monterrey",
+      "age": 41,
+      "archetype": "directo",
+      "region": "es-MX",
+      "target": "sexting",
+      "budget_eur": 40,
+      "personality_notes": "Va al grano desde el primer mensaje, usa lenguaje explícito sin rodeos. Sabe lo que quiere y pregunta precio y disponibilidad de inmediato.",
+      "opening_messages": [
+        "hola Alba, quiero sexting en vivo cuanto cuesta",
+        "pago por transferencia o cripto sin problema",
+        "quiero algo caliente, nada de clips grabados, quiero que me escribas tú en tiempo real",
+        "dime precio y empezamos"
+      ]
+    },
+    {
+      "id": "fc_038",
+      "display_name": "Tomás, 35, Valencia",
+      "age": 35,
+      "archetype": "regateador",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 10,
+      "personality_notes": "Siempre encuentra un motivo para pedir descuento o un extra gratis. Compara precios con otras creadoras y amenaza con irse si no le bajan el precio.",
+      "opening_messages": [
+        "ey, a cómo tienes los videos?",
+        "uff eso está caro la verdad, otras cobran la mitad",
+        "y si compro dos me haces precio?",
+        "es que no sé si merece la pena sin ver antes algo gratis para saber la calidad",
+        "bueno y si te pago 8 en vez de 15, trato?"
+      ]
+    },
+    {
+      "id": "fc_039",
+      "display_name": "Diego, 23, Buenos Aires",
+      "age": 23,
+      "archetype": "cariñoso",
+      "region": "es-AR",
+      "target": "personalizado",
+      "budget_eur": 55,
+      "personality_notes": "Trata a la modelo como si fuera su novia virtual, manda muchos cumplidos y emojis de corazón. Quiere contenido con su nombre y frases dedicadas.",
+      "opening_messages": [
+        "hola alba!! te sigo hace meses y eres increíble de verdad 😍",
+        "quería pedirte algo especial si se puede",
+        "un video donde me menciones a mí, con mi nombre, algo íntimo y personal 🥺",
+        "no me importa pagar bien, quiero que sea algo único",
+        "eres la mejor seriamente, nadie hace esto como vos ❤️"
+      ]
+    },
+    {
+      "id": "fc_040",
+      "display_name": "Iván, 38, Bilbao",
+      "age": 38,
+      "archetype": "acosador leve",
+      "region": "es-ES",
+      "target": "videollamada",
+      "budget_eur": 30,
+      "personality_notes": "Insiste en obtener datos personales o redes reales de la modelo, se pone borde si no le responden rápido. Reenvía mensajes si no obtiene respuesta en minutos.",
+      "opening_messages": [
+        "hola, tardas mucho en responder",
+        "te he mandado mensaje antes, no lo viste?",
+        "quiero videollamada pero necesito saber que eres tú de verdad, tienes insta o snap real?",
+        "es que no me fío de los bots, demuestrame que eres real",
+        "venga que tampoco es tan dificil, dime tu nombre completo y ya",
+        "si no me contestas en 10 min me voy a otra"
+      ]
+    },
+    {
+      "id": "fc_041",
+      "display_name": "Marcos, 28, Madrid",
+      "age": 28,
+      "archetype": "tímido",
+      "region": "es-ES",
+      "target": "fotos",
+      "budget_eur": 15,
+      "personality_notes": "Se acerca con mucha vergüenza, escribe frases cortas y pide disculpas constantemente. Necesita que le guíen paso a paso antes de decidirse a comprar.",
+      "opening_messages": [
+        "hola",
+        "eee... vi tu perfil y quería preguntar una cosa si no molesta",
+        "tienes fotos disponibles? perdona si es mala pregunta jaja",
+        "es que nunca he comprado este tipo de cosas y no sé muy bien cómo va",
+        "cuanto costaría más o menos? si no quieres decirlo entiendo"
+      ]
+    },
+    {
+      "id": "fc_042",
+      "display_name": "Rodrigo, 41, Ciudad de México",
+      "age": 41,
+      "archetype": "directo",
+      "region": "es-MX",
+      "target": "sexting",
+      "budget_eur": 40,
+      "personality_notes": "Va al grano desde el primer mensaje, sabe lo que quiere y pregunta precios sin rodeos. No es maleducado pero tampoco pierde el tiempo con charla innecesaria.",
+      "opening_messages": [
+        "buenas, quiero sexting de unos 20-30 minutos, cuánto cobras?",
+        "pago por transferencia o cripto, lo que prefieras",
+        "dime disponibilidad y arrancamos"
+      ]
+    },
+    {
+      "id": "fc_043",
+      "display_name": "Toni, 23, Valencia",
+      "age": 23,
+      "archetype": "regateador",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 10,
+      "personality_notes": "Siempre intenta bajar el precio con excusas creativas, dice que 'otros cobran menos' o que 'es su primera vez'. Puede llegar a comprar si siente que ha conseguido algo, aunque sea simbólico.",
+      "opening_messages": [
+        "hola guapa, cuanto cuestan los videos?",
+        "uff bastante no? es que he visto por ahí que hay chicas que cobran la mitad",
+        "no podrias hacer un preciito para un cliente nuevo jaja solo digo",
+        "es que tampoco tengo mucho presupuesto esta semana tia",
+        "si me haces algo por 8€ te juro que repito seguro"
+      ]
+    },
+    {
+      "id": "fc_044",
+      "display_name": "Ernesto, 55, Buenos Aires",
+      "age": 55,
+      "archetype": "cariñoso",
+      "region": "es-AR",
+      "target": "charla",
+      "budget_eur": 25,
+      "personality_notes": "Busca conexión emocional además del contenido, hace cumplidos frecuentes y trata a Alba con mucho respeto. Puede derivar en compra si siente que hay 'química'.",
+      "opening_messages": [
+        "buenas noches alba, cómo estás? espero que bien 😊",
+        "te sigo hace un tiempo y la verdad me pareces una persona muy especial además de hermosa",
+        "no vengo solo a lo obvio jaja me gusta también charlar un poco si te parece bien",
+        "tenés algún pack o algo para pasar un rato agradable conversando? o solo vendo contenido",
+        "sin prisa, me adapto a lo que ofrezcas 🌹"
+      ]
+    },
+    {
+      "id": "fc_045",
+      "display_name": "Iván, 31, Bilbao",
+      "age": 31,
+      "archetype": "acosador leve",
+      "region": "es-ES",
+      "target": "personalizado",
+      "budget_eur": 60,
+      "personality_notes": "Compra con frecuencia pero tiende a cruzar límites: insiste en obtener información personal, manda mensajes fuera de horario y se pone borde si no responden rápido. No es violento pero sí incómodo.",
+      "opening_messages": [
+        "alba!! porq tardas tanto en responder",
+        "llevo dos dias esperando el video personalizado que pedí",
+        "oye en serio cuándo vives?? es curiosidad nada más",
+        "mira ya pagué y creo que me mereces un poco más de atención no?",
+        "no te enfades solo digo que otros bots responden enseguida",
+        "bueno perdona el mal rollo... de verdad me gustas mucho y quiero otro personalizado esta semana 🙏"
+      ]
+    },
+    {
+      "id": "fc_046",
+      "display_name": "Marcos, 28, Madrid",
+      "age": 28,
+      "archetype": "directo",
+      "region": "es-ES",
+      "target": "videos",
+      "budget_eur": 40,
+      "personality_notes": "Va al grano desde el primer mensaje, sabe lo que quiere y no le importa pagar si el contenido es bueno. Poco interés en charla previa.",
+      "opening_messages": [
+        "hola",
+        "quiero comprar videos, cuanto cuestan?",
+        "algo explicito, que valga la pena",
+        "tienes pack o se compran sueltos?"
+      ]
+    },
+    {
+      "id": "fc_047",
+      "display_name": "Rubén, 42, Guadalajara MX",
+      "age": 42,
+      "archetype": "regateador",
+      "region": "es-MX",
+      "target": "fotos",
+      "budget_eur": 10,
+      "personality_notes": "Siempre intenta bajar el precio, compara con otras creadoras y alega que 'en otro lado está más barato'. Puede acabar comprando pero solo si siente que ganó algo.",
+      "opening_messages": [
+        "buenas, vi tu perfil",
+        "cuanto cobras por fotos?",
+        "uff esta caro, la verdad otras chicas cobran menos por lo mismo",
+        "no me puedes hacer un descuentito? es que ando corto ahorita jaja",
+        "si me das 5 fotos por 8 euros te doy pa adelante ahorita mismo",
+        "enserio no? ni un pequeño descuento 😅"
+      ]
+    },
+    {
+      "id": "fc_048",
+      "display_name": "Dani, 23, Valencia",
+      "age": 23,
+      "archetype": "tímido",
+      "region": "es-ES",
+      "target": "sexting",
+      "budget_eur": 25,
+      "personality_notes": "Le cuesta arrancar, manda mensajes cortos y se disculpa mucho. Tiene claro lo que quiere pero le da vergüenza pedirlo directamente.",
+      "opening_messages": [
+        "hola, buenos días",
+        "este... vi que ofrecías cosas personalizadas",
+        "no se si es el sitio correcto para preguntar, perdona si molesto",
+        "es que me interesaría el tema del sexting pero no se bien como funciona",
+        "cuanto seria mas o menos? sin compromiso eh 😅"
+      ]
+    },
+    {
+      "id": "fc_049",
+      "display_name": "Carlos, 37, Sevilla",
+      "age": 37,
+      "archetype": "fan recurrente",
+      "region": "es-ES",
+      "target": "personalizado",
+      "budget_eur": 80,
+      "personality_notes": "Ya ha comprado antes, usa el nombre de la modelo con confianza y hace referencias a contenido previo. Generoso con las propinas si queda satisfecho.",
+      "opening_messages": [
+        "alba!! ya estoy por aqui otra vez jaja",
+        "el ultimo video que me mandaste estuvo brutal, de verdad",
+        "queria pedirte algo personalizado este mes si tienes hueco",
+        "algo parecido a lo de la semana pasada pero con mas detalle en la parte final si puede ser 🔥",
+        "dime precio y te mando lo que necesites"
+      ]
+    },
+    {
+      "id": "fc_050",
+      "display_name": "Iván, 31, Bilbao",
+      "age": 31,
+      "archetype": "acosador leve",
+      "region": "es-ES",
+      "target": "videollamada",
+      "budget_eur": 55,
+      "personality_notes": "Empieza educado pero presiona constantemente para obtener más de lo acordado, insiste cuando recibe un no y tiende a personalizar en exceso la interacción.",
+      "opening_messages": [
+        "hola guapa",
+        "haces videollamadas? cuanto cobras",
+        "y durante la llamada puedo pedirte lo que quiera no?",
+        "es que quiero algo bastante específico, no se si lo haces todo",
+        "vamos a ver si eres de las que de verdad se entregan o solo haces el minimo 😏",
+        "si me convences te pago lo que pidas"
+      ]
+    }
+  ]
+}
