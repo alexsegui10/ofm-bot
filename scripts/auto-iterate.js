@@ -86,6 +86,9 @@ async function checkServerHealth() {
 async function resetChat(chatId) {
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   try {
+    // Always clear test_sent_messages (keyed by chat_id, not client_id)
+    await pool.query(`DELETE FROM test_sent_messages WHERE chat_id = $1`, [chatId]);
+
     const { rows } = await pool.query(
       `SELECT id FROM clients WHERE telegram_user_id = $1`,
       [chatId],
@@ -116,8 +119,12 @@ async function runSingle(scenario, evaluator) {
     result = await runScenario({
       chatId: scenario.chatId,
       messages: scenario.messages,
-      timeoutMs: 60_000,
-      quietMs: 5_000,
+      // Per-message timeout: must cover entry_delay (up to 60s in pacer.json) +
+      // LLM latencies + up to 5 fragments × 15s between_fragments.
+      timeoutMs: 180_000,
+      // Quiet window: must exceed pacer testing_delay_ms_max (15s) so we don't
+      // prematurely conclude Alba is done while she's still typing next fragment.
+      quietMs: 20_000,
     });
   } catch (err) {
     log(`  ⚠ fake-client error:`, err.message);

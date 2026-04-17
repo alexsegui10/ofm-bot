@@ -1,8 +1,25 @@
 import { Bot } from 'grammy';
 import { env } from '../config/env.js';
 import { agentLogger } from './logger.js';
+import { query } from './db.js';
 
 const log = agentLogger('telegram');
+
+/**
+ * In TEST_MODE, record what would have been sent to Telegram so that
+ * scripts/fake-client.js can read exactly what the client would see.
+ * No-throwing: swallow errors so test mode never breaks the pipeline.
+ */
+async function recordTestSent(chatId, kind, content, metadata = {}) {
+  try {
+    await query(
+      `INSERT INTO test_sent_messages (chat_id, kind, content, metadata) VALUES ($1, $2, $3, $4)`,
+      [chatId, kind, String(content ?? ''), metadata],
+    );
+  } catch (err) {
+    log.warn({ chatId, err: err.message }, 'recordTestSent failed');
+  }
+}
 
 let _bot;
 
@@ -22,10 +39,11 @@ export function getBot() {
  * @param {object} [extra]  - additional Telegram send options
  */
 export async function sendMessage(businessConnectionId, chatId, text, extra = {}) {
-  // TEST_MODE: no-op. Pipeline still runs end-to-end (BBDD updated) but no real
-  // Telegram API call. Used by scripts/auto-iterate.js to avoid sending to real users.
+  // TEST_MODE: no real Telegram call, but record to test_sent_messages so
+  // scripts/fake-client.js can read what the client would have seen.
   if (env.TEST_MODE) {
     log.info({ chatId, text_preview: String(text).slice(0, 80) }, 'SKIPPED (TEST_MODE)');
+    await recordTestSent(chatId, 'text', text);
     return { message_id: Math.floor(Math.random() * 1e9), test_mode: true };
   }
 
@@ -65,6 +83,7 @@ export async function sendChatAction(businessConnectionId, chatId, action = 'typ
 export async function sendMedia(businessConnectionId, chatId, type, fileId, caption) {
   if (env.TEST_MODE) {
     log.info({ chatId, type, fileId, caption_preview: String(caption ?? '').slice(0, 80) }, 'SKIPPED media (TEST_MODE)');
+    await recordTestSent(chatId, 'media', caption ?? `[${type}]`, { type, fileId });
     return { message_id: Math.floor(Math.random() * 1e9), test_mode: true };
   }
   const methodMap = {

@@ -88,42 +88,26 @@ async function postToWebhook(update) {
 }
 
 /**
- * Find the internal client id given a telegram_user_id (chatId).
- * Returns null if the client hasn't been created yet.
+ * Max test_sent_messages id for a chat (used as "cursor"). Returns 0 if none.
  */
-async function getClientId(chatId) {
+async function getLastSentId(chatId) {
   const { rows } = await getPool().query(
-    `SELECT id FROM clients WHERE telegram_user_id = $1`,
+    `SELECT COALESCE(MAX(id), 0) AS maxid FROM test_sent_messages WHERE chat_id = $1`,
     [chatId],
-  );
-  return rows[0]?.id ?? null;
-}
-
-/**
- * Max assistant-message id for a client (used as "cursor"). Returns 0 if none.
- */
-async function getLastAssistantId(clientId) {
-  if (!clientId) return 0;
-  const { rows } = await getPool().query(
-    `SELECT COALESCE(MAX(id), 0) AS maxid
-       FROM conversations
-      WHERE client_id = $1 AND role = 'assistant'`,
-    [clientId],
   );
   return Number(rows[0].maxid) || 0;
 }
 
 /**
- * Fetch assistant messages with id > cursor for a client, ordered by id.
+ * Fetch sent messages with id > cursor for a chat, ordered by id.
  */
-async function fetchNewAssistantMessages(clientId, cursor) {
-  if (!clientId) return [];
+async function fetchNewSentMessages(chatId, cursor) {
   const { rows } = await getPool().query(
-    `SELECT id, content, intent, created_at
-       FROM conversations
-      WHERE client_id = $1 AND role = 'assistant' AND id > $2
+    `SELECT id, content, kind, metadata, created_at
+       FROM test_sent_messages
+      WHERE chat_id = $1 AND id > $2
       ORDER BY id ASC`,
-    [clientId, cursor],
+    [chatId, cursor],
   );
   return rows;
 }
@@ -145,10 +129,7 @@ async function sendAndCollect({
   pollMs = 500,
   quietMs = 4_000,
 }) {
-  // Find (or re-find) our internal client_id BEFORE sending; the orchestrator
-  // will create it on first message, so it may initially be null.
-  let clientId = await getClientId(chatId);
-  const cursor = await getLastAssistantId(clientId);
+  const cursor = await getLastSentId(chatId);
 
   const update = buildUpdate(chatId, text);
   await postToWebhook(update);
@@ -159,21 +140,16 @@ async function sendAndCollect({
 
   while (Date.now() - start < timeoutMs) {
     await sleep(pollMs);
-    if (!clientId) clientId = await getClientId(chatId);
-    if (!clientId) continue;
-
-    const rows = await fetchNewAssistantMessages(clientId, cursor);
+    const rows = await fetchNewSentMessages(chatId, cursor);
     if (rows.length > lastRows.length) {
       lastNewMessageAt = Date.now();
       lastRows = rows;
     }
-    // "quiet" steady-state detection
     if (lastRows.length > 0 && lastNewMessageAt && (Date.now() - lastNewMessageAt) >= quietMs) {
       return lastRows;
     }
   }
 
-  // Timeout — return whatever we have
   return lastRows;
 }
 
@@ -189,7 +165,7 @@ export async function runScenario({ chatId, messages, timeoutMs, quietMs }) {
     const rows = await sendAndCollect({ chatId, text, timeoutMs, quietMs });
     turns.push({
       user: text,
-      assistant: rows.map((r) => ({ content: r.content, intent: r.intent })),
+      assistant: rows.map((r) => ({ content: r.content, intent: r.kind })),
     });
   }
   return { chatId, turns };

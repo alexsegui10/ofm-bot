@@ -1,5 +1,6 @@
 import { agentLogger } from '../logger.js';
 import { env } from '../../config/env.js';
+import { query } from '../db.js';
 
 const log = agentLogger('telegram-stars');
 
@@ -28,6 +29,14 @@ export async function sendStarsInvoice(api, chatId, { title, description, amount
 
   if (env.TEST_MODE) {
     log.info({ chat_id: chatId, stars, eur: amountEur, payload }, 'SKIPPED stars invoice (TEST_MODE)');
+    try {
+      await query(
+        `INSERT INTO test_sent_messages (chat_id, kind, content, metadata) VALUES ($1, 'invoice', $2, $3)`,
+        [chatId, `[invoice ${stars} XTR / ${amountEur}€] ${title} — ${description}`, { stars, amountEur, payload }],
+      );
+    } catch (err) {
+      log.warn({ err: err.message }, 'test_sent_messages insert failed');
+    }
     return { message_id: Math.floor(Math.random() * 1e9), test_mode: true };
   }
 

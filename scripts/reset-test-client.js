@@ -87,6 +87,13 @@ async function resetTestClients() {
     );
     console.log(`  clients: ${clientRes.rowCount} row(s) deleted`);
 
+    // test_sent_messages is keyed by chat_id (telegram_user_id), not client_id
+    const tsmRes = await client.query(
+      `DELETE FROM test_sent_messages WHERE chat_id = ANY($1::bigint[])`,
+      [targetIds],
+    );
+    console.log(`  test_sent_messages: ${tsmRes.rowCount} row(s) deleted`);
+
     await client.query('COMMIT');
     console.log(`\nReset ${clientIds.length} test client(s) complete.`);
   } catch (err) {
