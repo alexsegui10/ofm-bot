@@ -51,6 +51,15 @@ describe('parseRouterOutput', () => {
     const r = parseRouterOutput(raw);
     expect(r.intent).toBe('payment_method_selection');
   });
+
+  it.each([
+    'ask_video_list', 'ask_video_details', 'ask_pack_list',
+    'choose_video', 'choose_pack', 'buy_single_photos', 'buy_sexting_template',
+  ])('accepts v2 intent %s', (intent) => {
+    const raw = `{"intent":"${intent}","confidence":0.9,"fraud_score":0,"reasoning":"x"}`;
+    const r = parseRouterOutput(raw);
+    expect(r.intent).toBe(intent);
+  });
 });
 
 describe('runRouter', () => {
