@@ -179,10 +179,10 @@ export async function confirmBizumByClient(clientId, chatId, businessConnectionI
 
   // If auto-approve conditions already met: tell client we're verifying quickly
   if (shouldAutoApprove(client, amountEur)) {
-    return '¡Gracias! Lo estoy verificando, en unos minutos te confirmo 🙂';
+    return 'vale guapo, ahora lo miro 👀';
   }
 
-  return '¡Gracias! Le he avisado a mi compañero para que lo confirme. En cuanto lo haga te mando el contenido 🔥';
+  return 'vale guapo, ahora lo miro 👀';
 }
 
 // ─── Bizum — partner response (from Twilio WhatsApp) ─────────────────────────

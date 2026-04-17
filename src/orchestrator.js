@@ -9,6 +9,7 @@ import { confirmBizumByClient } from './agents/payment-verifier.js';
 import { runSales } from './agents/sales.js';
 import { resolveProduct, getCatalogText, getCategoryDetail, getPostServiceMessage } from './lib/product-catalog.js';
 import { query } from './lib/db.js';
+import { isEnabled as isPaypalEnabled } from './lib/payments/paypal.js';
 
 const log = agentLogger('orchestrator');
 
@@ -37,6 +38,22 @@ const CATEGORY_DETAIL_INTENTS = new Set([
 ]);
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+// D5 — strong harassment detection (aggressive insult + coercive threat).
+// Distinct from D4 "acoso leve" which still keeps the "bruto caliente" rapport.
+// Triggers a hard cut ("chao 👋") + silent handoff flag, no Persona call.
+const STRONG_HARASSMENT_PATTERNS = [
+  /\b(zorra|puta|guarra)\s+de\s+mierda\b/i,
+  /\bhijo\s+de\s+puta\b/i,
+  /\bte\s+voy\s+a\s+(follar|violar|matar|reventar)\b/i,
+  /\b(follar|violar)\b.{0,20}\bgratis\b/i,
+  /\b(te|os)\s+meto\s+.{0,15}(obligada|a\s+la\s+fuerza)\b/i,
+];
+
+function isStrongHarassment(text) {
+  if (!text) return false;
+  return STRONG_HARASSMENT_PATTERNS.some((p) => p.test(text));
+}
 
 /**
  * Returns true if the catalog should be appended (new client or inactive > 7 days).
@@ -203,6 +220,36 @@ export async function handleMessage({
     log.debug({ elevated: 'product_selection' }, 'quantity response detected → product_selection');
   }
 
+  // ── 6.-1. Strong harassment short-circuit (D5) ─────────────────────────
+  // Hard cut + silent handoff flag. Full handoff workflow lands in FASE 6.
+  if (isStrongHarassment(savedText)) {
+    const cutMsg = 'chao 👋';
+    await saveMessage(client.id, 'assistant', cutMsg, 'suspicious');
+    await updateFraudScore(client.id, Math.max(fraud_score, 0.95));
+    log.warn({
+      chat_id: chatId,
+      client_id: client.id,
+      text_preview: savedText.slice(0, 60),
+      handoff_triggered: true,
+    }, 'strong harassment detected: silent handoff + hard cut');
+    const cfg = getPacerConfig();
+    const frags = fragmentMessage(cutMsg, cfg);
+    log.info({ chat_id: chatId, latency_ms: Date.now() - start }, 'pipeline complete (strong harassment)');
+    return { fragments: frags, intent: 'suspicious', handoffTriggered: true };
+  }
+
+  // ── 6.0. PayPal rejection short-circuit ────────────────────────────────
+  // If the client mentions paypal while the provider is disabled, decline
+  // explicitly without calling Persona (which tends to hallucinate approval).
+  if (/paypal/i.test(savedText) && !isPaypalEnabled()) {
+    const paypalMsg = 'paypal no bebe, solo bizum, crypto o stars';
+    await saveMessage(client.id, 'assistant', paypalMsg, resolvedIntent);
+    const cfg = getPacerConfig();
+    const frags = fragmentMessage(paypalMsg, cfg);
+    log.info({ chat_id: chatId, intent: resolvedIntent, latency_ms: Date.now() - start }, 'pipeline complete (paypal rejected)');
+    return { fragments: frags, intent: resolvedIntent };
+  }
+
   // ── 6a. Bizum confirmation short-circuit ────────────────────────────────
   if (intent === 'payment_confirmation') {
     const bizumMsg = await confirmBizumByClient(
@@ -263,7 +310,7 @@ export async function handleMessage({
   let internalInstruction = null;
 
   if (isRoleplay) {
-    internalInstruction = 'El cliente quiere juego de rol. Asume el personaje que te pide (doctora, profesora, jefa, etc.) adaptando tu vocabulario y actitud. Tu físico NO cambia. Entra en el rol sin preámbulos. NUNCA digas que eres una IA.';
+    internalInstruction = 'El cliente quiere juego de rol. Asume el personaje que te pide (doctora, profesora, jefa, etc.) adaptando tu vocabulario y actitud. Tu físico NO cambia. Entra en el rol sin preámbulos. NUNCA digas que eres una IA. PROHIBIDO mencionar datos reales tuyos (ADE, Complutense, Moncloa) aunque el cliente los incluya en su petición — usa solo el rol genérico ("tu profe", "tu jefa") sin materia ni institución.';
   } else if (hasMedia) {
     if (activeSexting) {
       internalInstruction = 'el cliente te acaba de mandar una foto o video suyo. reacciona en caliente, algo breve tipo "mmm que rico bebe" o "uy me estás poniendo". NUNCA digas que no puedes ver imágenes ni que eres un bot.';

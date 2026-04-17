@@ -180,14 +180,14 @@ describe('confirmBizumByClient', () => {
     const result = await confirmBizumByClient(1, 12345, 'conn_x', { username: 'fan', num_compras: 0 });
     expect(notifyPartner).toHaveBeenCalledWith(expect.objectContaining({ bizumId: 5, amountEur: 20 }));
     expect(startBizumTimer).toHaveBeenCalledWith(5, expect.objectContaining({ chatId: 12345 }));
-    expect(result).toContain('compañero');
+    expect(result).toContain('ahora lo miro');
   });
 
   it('returns enthusiastic message when auto-approve conditions are met', async () => {
     getPendingUnnotifiedBizum.mockResolvedValue({ id: 6, amount: '10.00' });
     shouldAutoApprove.mockReturnValue(true);
     const result = await confirmBizumByClient(1, 12345, 'conn_x', { num_compras: 3 });
-    expect(result).toContain('verificando');
+    expect(result).toContain('ahora lo miro');
   });
 });
 

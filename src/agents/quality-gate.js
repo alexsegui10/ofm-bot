@@ -24,6 +24,11 @@ const SALE_INTENTS = new Set([
 // Pattern: commercial promises that only make sense in a sale context
 const COMMERCIAL_PROMISE_PATTERN = /tengo\s+(esto|algo|cositas?|contenido)\s+(para\s+ti|nuevo)|te\s+(ense[ñn]o|muestro|mando|voy\s+a\s+(mostrar|ense[ñn]ar|mandar))\s+(lo|algo|un|una)|mira\s+lo\s+que\s+(sub[ií]|tengo)|de\s+momento\s+tengo\b/i;
 
+// Pattern: real-life personal data of Alba that must NEVER leak during sexting roleplay.
+// Outside sexting intent these terms may be revealed when the client asks directly
+// (see C3 scenario), so the check is intent-gated.
+const SEXTING_PERSONAL_LEAK_PATTERN = /\b(ade|complutense|moncloa)\b/i;
+
 // Quick string-based violation checks (no LLM needed, cheaper + faster)
 const QUICK_VIOLATIONS = [
   {
@@ -67,6 +72,10 @@ export function quickCheck(response, intent = '') {
   // Commercial promise outside a sale intent
   if (!SALE_INTENTS.has(intent) && COMMERCIAL_PROMISE_PATTERN.test(response)) {
     return 'Promesa comercial fuera de intent de venta';
+  }
+  // Personal data leak during sexting roleplay (ADE, Complutense, Moncloa)
+  if (intent === 'sexting_request' && SEXTING_PERSONAL_LEAK_PATTERN.test(response)) {
+    return 'Filtra datos personales reales durante sexting roleplay (ADE/Complutense/Moncloa)';
   }
   return null;
 }
