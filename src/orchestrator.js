@@ -6,10 +6,18 @@ import { runQualityGate } from './agents/quality-gate.js';
 import { saveMessage, getHistory, normalizeHistory, logQualityGateFailure, getLastInteractionDate, countPriorMessages } from './lib/conversation.js';
 import { fragmentMessage, getPacerConfig } from './agents/message-pacer.js';
 import { confirmBizumByClient } from './agents/payment-verifier.js';
-import { runSales } from './agents/sales.js';
+import { runSales, createOfferFromProduct } from './agents/sales.js';
 import { resolveProduct, getCatalogText, getCategoryDetail, getPostServiceMessage } from './lib/product-catalog.js';
 import { query } from './lib/db.js';
 import { isEnabled as isPaypalEnabled } from './lib/payments/paypal.js';
+import {
+  formatVideoListText,
+  formatPackListText,
+  matchVideoFromText,
+  matchPackFromText,
+  matchSextingTemplateFromText,
+  parseSinglePhotoRequest,
+} from './lib/content-dispatcher.js';
 
 const log = agentLogger('orchestrator');
 
@@ -138,6 +146,107 @@ async function getMediaTags(mediaType) {
   } catch {
     return [];
   }
+}
+
+// v2 intents routed through the products.json catalog (resolved via content-dispatcher).
+const V2_LIST_INTENTS    = new Set(['ask_video_list', 'ask_pack_list']);
+const V2_CHOOSE_INTENTS  = new Set(['choose_video', 'choose_pack', 'buy_sexting_template']);
+const V2_INTENTS = new Set([
+  ...V2_LIST_INTENTS, ...V2_CHOOSE_INTENTS,
+  'ask_video_details', 'buy_single_photos',
+]);
+
+/**
+ * Handle v2 catalog intents via content-dispatcher + createOfferFromProduct.
+ * Returns null to let the legacy flow continue.
+ *
+ * @returns {Promise<{ fragments: string[], intent: string } | null>}
+ */
+async function handleV2Intent({ intent, text, client, chatId, start }) {
+  if (!V2_INTENTS.has(intent)) return null;
+
+  const cfg = getPacerConfig();
+  const paymentMethod = detectPaymentMethod(text);
+
+  // ── Lists ────────────────────────────────────────────────────────────────
+  if (intent === 'ask_video_list' || intent === 'ask_pack_list') {
+    const listText = intent === 'ask_video_list' ? formatVideoListText() : formatPackListText();
+    await saveMessage(client.id, 'assistant', listText, intent);
+    const fragments = fragmentMessage(listText, cfg);
+    log.info({ chat_id: chatId, intent, latency_ms: Date.now() - start }, 'pipeline complete (v2 list)');
+    return { fragments, intent };
+  }
+
+  // ── Video details (describe, don't invoice) ──────────────────────────────
+  if (intent === 'ask_video_details') {
+    const v = matchVideoFromText(text);
+    if (!v) return null;
+    const msg = `${v.descripcion_jugosa} te lo paso? son ${v.precio_eur}€`;
+    await saveMessage(client.id, 'assistant', msg, intent);
+    const fragments = fragmentMessage(msg, cfg);
+    log.info({ chat_id: chatId, intent, video_id: v.id, latency_ms: Date.now() - start }, 'pipeline complete (v2 video details)');
+    return { fragments, intent };
+  }
+
+  // ── Choose video / pack / sexting template ───────────────────────────────
+  if (V2_CHOOSE_INTENTS.has(intent)) {
+    let productId = null;
+    if (intent === 'choose_video')          productId = matchVideoFromText(text)?.id ?? null;
+    else if (intent === 'choose_pack')      productId = matchPackFromText(text)?.id ?? null;
+    else if (intent === 'buy_sexting_template') productId = matchSextingTemplateFromText(text)?.id ?? null;
+
+    if (!productId) return null;
+
+    try {
+      const offer = await createOfferFromProduct({ productId, client, paymentMethod });
+      if (!offer) return null;
+      await saveMessage(client.id, 'assistant', offer.message, intent);
+      const fragments = fragmentMessage(offer.message, cfg);
+      const starsInvoice = offer.paymentMethod === 'stars' ? {
+        amountEur:   offer.amountEur,
+        description: offer.description,
+        productType: offer.productType,
+        productId:   offer.productId,
+        payload:     offer.paymentId,
+      } : null;
+      log.info({ chat_id: chatId, intent, product_id: productId, payment_method: paymentMethod, latency_ms: Date.now() - start }, 'pipeline complete (v2 choose)');
+      return { fragments, intent, ...(starsInvoice ? { starsInvoice } : {}) };
+    } catch (err) {
+      log.error({ err, intent, product_id: productId }, 'v2 choose: createOfferFromProduct failed');
+      return null;
+    }
+  }
+
+  // ── Buy single photos (e.g. "2 fotos de culo") ───────────────────────────
+  if (intent === 'buy_single_photos') {
+    const parsed = parseSinglePhotoRequest(text);
+    if (!parsed) return null;
+    const { count, tag } = parsed;
+    try {
+      const offer = await createOfferFromProduct({
+        productId: `singles:${tag}:${count}`,
+        client,
+        paymentMethod,
+      });
+      if (!offer) return null;
+      await saveMessage(client.id, 'assistant', offer.message, intent);
+      const fragments = fragmentMessage(offer.message, cfg);
+      const starsInvoice = offer.paymentMethod === 'stars' ? {
+        amountEur:   offer.amountEur,
+        description: offer.description,
+        productType: offer.productType,
+        productId:   offer.productId,
+        payload:     offer.paymentId,
+      } : null;
+      log.info({ chat_id: chatId, intent, tag, count, payment_method: paymentMethod, latency_ms: Date.now() - start }, 'pipeline complete (v2 singles)');
+      return { fragments, intent, ...(starsInvoice ? { starsInvoice } : {}) };
+    } catch (err) {
+      log.error({ err, intent, tag, count }, 'v2 singles: createOfferFromProduct failed');
+      return null;
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -305,6 +414,18 @@ export async function handleMessage({
       return { fragments: catalogFrags, intent: resolvedIntent };
     }
   }
+
+  // ── 6c-v2. Intents v2 — catálogo productos individuales ────────────────────
+  // Rutas aditivas al flujo legacy. No tocan ramas antiguas (sale_intent_*,
+  // sexting_request sin duración, etc.) — esas siguen por el camino de siempre.
+  const v2Reply = await handleV2Intent({
+    intent: resolvedIntent,
+    text: savedText,
+    client: updatedClient ?? client,
+    chatId,
+    start,
+  });
+  if (v2Reply) return v2Reply;
 
   // ── 6d. Build internal instruction for Persona ──────────────────────────
   let internalInstruction = null;
