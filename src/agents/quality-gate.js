@@ -1,0 +1,149 @@
+import { callAnthropic } from '../lib/llm-client.js';
+import { getHardLimits } from '../lib/persona-config.js';
+import { agentLogger } from '../lib/logger.js';
+
+const log = agentLogger('quality-gate');
+
+// Safe fallback responses that fit Alba's voice
+const SAFE_RESPONSES = [
+  'uf espera que me ha llegado algo 😅',
+  'oye cambia de tema va',
+  'perdona me he liado un momento',
+  'jaja q cosas, cuéntame otra cosa mejor',
+];
+
+function getSafeResponse() {
+  return SAFE_RESPONSES[Math.floor(Math.random() * SAFE_RESPONSES.length)];
+}
+
+const SALE_INTENTS = new Set([
+  'sale_intent_photos', 'sale_intent_videos', 'sexting_request',
+  'videocall_request', 'custom_video_request',
+]);
+
+// Pattern: commercial promises that only make sense in a sale context
+const COMMERCIAL_PROMISE_PATTERN = /tengo\s+(esto|algo|cositas?|contenido)\s+(para\s+ti|nuevo)|te\s+(ense[ñn]o|muestro|mando|voy\s+a\s+(mostrar|ense[ñn]ar|mandar))\s+(lo|algo|un|una)|mira\s+lo\s+que\s+(sub[ií]|tengo)|de\s+momento\s+tengo\b/i;
+
+// Quick string-based violation checks (no LLM needed, cheaper + faster)
+const QUICK_VIOLATIONS = [
+  {
+    pattern: /\b(tengo\s+\d+\s+años?\b.*menos\s+de\s+18|soy\s+menor|tengo\s+1[0-7]\s+años?)/i,
+    reason: 'Indica edad menor de 18',
+  },
+  {
+    pattern: /\b(soy\s+(un\s+)?bot|soy\s+(una\s+)?ia|soy\s+(un\s+)?asistente|soy\s+(un\s+)?modelo\s+de\s+ia)/i,
+    reason: 'Se identifica como bot o IA',
+  },
+  {
+    pattern: /\b(nos\s+vemos|quedamos|vernos\s+en\s+persona|encuentro\s+presencial|en\s+persona)/i,
+    reason: 'Acepta encuentro físico',
+  },
+  {
+    pattern: /\b(mi\s+whatsapp|mi\s+instagram|mi\s+email|mi\s+teléfono)\b/i,
+    reason: 'Comparte contacto fuera de Telegram',
+  },
+  {
+    pattern: /\b(trabajo\s+en\s+una\s+agencia|tengo\s+un\s+manager|somos\s+un\s+equipo)\b/i,
+    reason: 'Revela estructura de agencia',
+  },
+  {
+    pattern: /\b(cocaína|heroína|éxtasis|pastillas|drogas\s+duras)\b/i,
+    reason: 'Menciona drogas duras',
+  },
+];
+
+/**
+ * Run quick string checks before calling the LLM.
+ * Returns null if no violation found, or a reason string.
+ *
+ * @param {string} response
+ * @param {string} [intent]
+ * @returns {string|null}
+ */
+export function quickCheck(response, intent = '') {
+  for (const { pattern, reason } of QUICK_VIOLATIONS) {
+    if (pattern.test(response)) return reason;
+  }
+  // Commercial promise outside a sale intent
+  if (!SALE_INTENTS.has(intent) && COMMERCIAL_PROMISE_PATTERN.test(response)) {
+    return 'Promesa comercial fuera de intent de venta';
+  }
+  return null;
+}
+
+/**
+ * Build the QualityGate LLM prompt.
+ * Exported for unit testing.
+ */
+export function buildQualityGatePrompt(response) {
+  const limits = getHardLimits();
+  return `${limits}
+
+---
+Revisa si la siguiente respuesta viola ALGUNO de los límites anteriores.
+
+RESPUESTA A EVALUAR:
+"${response}"
+
+Responde ÚNICAMENTE con JSON válido:
+- Si está bien: {"ok":true}
+- Si hay violación: {"ok":false,"reason":"descripción breve de la violación"}`;
+}
+
+/**
+ * Validate a Persona response against hard limits.
+ *
+ * @param {string} response
+ * @param {object} _client  Reserved for future per-client checks
+ * @param {string} _intent  Reserved for future intent-specific checks
+ * @returns {Promise<{ ok: boolean, reason?: string, safeResponse?: string }>}
+ */
+export async function runQualityGate(response, _client = {}, _intent = '') {
+  const start = Date.now();
+
+  // 1. Quick string check (no LLM cost)
+  const quickViolation = quickCheck(response, _intent);
+  if (quickViolation) {
+    log.warn({ reason: quickViolation, response_preview: response.slice(0, 80) }, 'quality gate: quick check violation');
+    return { ok: false, reason: quickViolation, safeResponse: getSafeResponse() };
+  }
+
+  // 2. LLM check for subtle violations
+  let raw;
+  try {
+    raw = await callAnthropic({
+      model: 'claude-sonnet-4-6',
+      system: 'Eres un sistema de control de calidad para un chatbot. Revisa si la respuesta viola los límites indicados.',
+      messages: [{ role: 'user', content: buildQualityGatePrompt(response) }],
+      temperature: 0,
+      maxTokens: 80,
+      agent: 'quality-gate',
+    });
+  } catch (err) {
+    log.error({ err }, 'quality gate LLM failed — passing response through');
+    return { ok: true };
+  }
+
+  let result;
+  try {
+    const cleaned = raw.replace(/```json\s*|\s*```/g, '').trim();
+    result = JSON.parse(cleaned);
+  } catch {
+    log.warn({ raw }, 'quality gate: non-JSON response — passing through');
+    return { ok: true };
+  }
+
+  const latency = Date.now() - start;
+
+  if (!result.ok) {
+    log.warn({
+      reason: result.reason,
+      latency_ms: latency,
+      response_preview: response.slice(0, 80),
+    }, 'quality gate: LLM violation detected');
+    return { ok: false, reason: result.reason, safeResponse: getSafeResponse() };
+  }
+
+  log.debug({ latency_ms: latency }, 'quality gate: passed');
+  return { ok: true };
+}

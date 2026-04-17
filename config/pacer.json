@@ -1,0 +1,49 @@
+{
+  "_comment": "Message Pacer config — editar sin tocar código. Todos los tiempos en segundos salvo donde se indique.",
+
+  "testing_mode": true,
+  "testing_delay_ms_min": 10000,
+  "testing_delay_ms_max": 15000,
+
+  "entry_delay": {
+    "min_seconds": 30,
+    "max_seconds": 60,
+    "reset_on_new_message": true,
+    "per_word_ms": 80
+  },
+  "fragment_count": {
+    "min": 2,
+    "max": 5
+  },
+  "between_fragments": {
+    "min_seconds": 3,
+    "max_seconds": 8
+  },
+  "typing_speed_wpm": {
+    "min": 50,
+    "max": 70
+  },
+  "active_hours": [
+    { "start": 10, "end": 13 },
+    { "start": 16, "end": 20 },
+    { "start": 22, "end": 25 }
+  ],
+  "inactive_multiplier": 3.5,
+  "sleep_hours": {
+    "start": 2,
+    "end": 7,
+    "enabled": true,
+    "wake_response": "ey bebe, buenos días 😈 qué necesitas?"
+  },
+  "fragmentation": {
+    "probability_short": 0.5,
+    "min_fragment_length": 8
+  },
+  "sexting_delay": {
+    "enabled": true,
+    "calentamiento": { "min_ms": 20000, "max_ms": 40000 },
+    "subida":        { "min_ms": 15000, "max_ms": 30000 },
+    "climax":        { "min_ms": 10000, "max_ms": 20000 },
+    "cierre":        { "min_ms": 20000, "max_ms": 40000 }
+  }
+}

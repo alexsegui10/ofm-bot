@@ -1,0 +1,36 @@
+{
+  "name": "ofm-bot",
+  "version": "1.0.0",
+  "description": "Telegram Business Bot para gestión de fans OFM — 9 agentes runtime",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.js",
+    "lint": "eslint src/",
+    "db:migrate": "node db/migrate.js",
+    "db:seed": "node db/seed.js",
+    "upload-media": "node scripts/upload-media.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "grammy": "^1.31.0",
+    "openai": "^4.97.0",
+    "pg": "^8.13.3",
+    "pino": "^9.6.0",
+    "twilio": "^5.4.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "pino-pretty": "^13.0.0",
+    "supertest": "^7.0.0",
+    "vitest": "^3.1.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "_metadata": {
+    "currency": "EUR",
+    "last_updated": "2026-04-16",
+    "notes": "Precios editables en caliente — el bot lee este archivo en cada turno sin reiniciar."
+  },
+
+  "catalogo_mensaje": "📸 fotos — 1 foto 7€ · 2 fotos 12€ · 3 fotos 15€\n🎥 videos — 1min 5€ · 2min 10€ · 3min 14€ · 4min 17€ · 5min 20€\n🔥 sexting — 3€/min (mínimo 5 min)\n📹 videollamada — 4€/min (mínimo 5 min)\n💎 personalizado — desde 45€, dime qué quieres\n\ndime qué te apetece rey 😈",
+
+  "fotos": {
+    "1_foto":  { "precio_eur": 7,  "descripcion": "1 foto" },
+    "2_fotos": { "precio_eur": 12, "descripcion": "2 fotos" },
+    "3_fotos": { "precio_eur": 15, "descripcion": "3 fotos" }
+  },
+
+  "videos": {
+    "1min": { "precio_eur": 5,  "duracion_min": 1, "descripcion": "Video 1 minuto" },
+    "2min": { "precio_eur": 10, "duracion_min": 2, "descripcion": "Video 2 minutos" },
+    "3min": { "precio_eur": 14, "duracion_min": 3, "descripcion": "Video 3 minutos" },
+    "4min": { "precio_eur": 17, "duracion_min": 4, "descripcion": "Video 4 minutos" },
+    "5min": { "precio_eur": 20, "duracion_min": 5, "descripcion": "Video 5 minutos" }
+  },
+
+  "sexting": {
+    "precio_por_minuto": 3,
+    "minimo_minutos": 5,
+    "precio_minimo": 15,
+    "descripcion": "Sexting — 3€/min, mínimo 5 min"
+  },
+
+  "videollamada": {
+    "precio_por_minuto": 4,
+    "minimo_minutos": 5,
+    "precio_minimo": 20,
+    "descripcion": "Videollamada — 4€/min, mínimo 5 min"
+  },
+
+  "personalizado": {
+    "precio_base": 45,
+    "descripcion": "Video personalizado desde 45€"
+  },
+
+  "vip": {
+    "umbral_total_gastado_eur": 200
+  },
+
+  "limites_pago": {
+    "minimo_transaccion_eur": 3,
+    "maximo_transaccion_eur": 500
+  }
+}

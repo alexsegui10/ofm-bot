@@ -1,0 +1,30 @@
+{
+  "_comment": "NowPayments crypto currency routing rules. Background: NowPayments requires a cross-currency swap when the client pays in a different currency than the payout wallet. Swaps have dynamic minimums (~20-25 EUR) based on network fees and liquidity. Below the threshold we force USDT TRC20 (same as payout wallet) to avoid the swap entirely — only a ~1 EUR TRON network fee applies. Above the threshold the swap minimum is comfortably covered and the client can choose any currency. In the grey zone we query /v1/min-amount per currency and filter.",
+
+  "crypto": {
+    "swap_threshold_eur": 20,
+    "grey_zone_max_eur": 50,
+    "cache_ttl_minutes": 15,
+
+    "below_threshold": {
+      "pay_currency": "usdttrc20",
+      "description": "Force USDT TRC20 (= payout wallet currency) to skip the cross-swap. Works for any amount."
+    },
+
+    "above_threshold": {
+      "pay_currency": null,
+      "description": "Let client choose freely. Cross-swap covers its own minimum at these amounts.",
+      "accepted_currencies": [
+        "usdttrc20",
+        "usdterc20",
+        "btc",
+        "eth",
+        "ltc",
+        "trx",
+        "doge",
+        "bnbbsc",
+        "sol"
+      ]
+    }
+  }
+}
