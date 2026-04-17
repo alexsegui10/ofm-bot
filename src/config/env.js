@@ -38,4 +38,5 @@ export const env = {
   PORT: parseInt(get('PORT', '4000'), 10),
   NODE_ENV: get('NODE_ENV', 'development'),
   WEBHOOK_BASE_URL: get('WEBHOOK_BASE_URL', 'https://bot-dev.luxemodels.eu'),
+  TEST_MODE: get('TEST_MODE', 'false').toLowerCase() === 'true',
 };

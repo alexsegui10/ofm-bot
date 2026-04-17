@@ -22,6 +22,13 @@ export function getBot() {
  * @param {object} [extra]  - additional Telegram send options
  */
 export async function sendMessage(businessConnectionId, chatId, text, extra = {}) {
+  // TEST_MODE: no-op. Pipeline still runs end-to-end (BBDD updated) but no real
+  // Telegram API call. Used by scripts/auto-iterate.js to avoid sending to real users.
+  if (env.TEST_MODE) {
+    log.info({ chatId, text_preview: String(text).slice(0, 80) }, 'SKIPPED (TEST_MODE)');
+    return { message_id: Math.floor(Math.random() * 1e9), test_mode: true };
+  }
+
   const start = Date.now();
   try {
     const msg = await getBot().api.sendMessage(chatId, text, {
@@ -40,6 +47,7 @@ export async function sendMessage(businessConnectionId, chatId, text, extra = {}
  * Send a "typing…" or other chat action through a Business Connection.
  */
 export async function sendChatAction(businessConnectionId, chatId, action = 'typing') {
+  if (env.TEST_MODE) return;
   try {
     await getBot().api.sendChatAction(chatId, action, {
       business_connection_id: businessConnectionId,
@@ -55,6 +63,10 @@ export async function sendChatAction(businessConnectionId, chatId, action = 'typ
  * type: 'document' | 'photo' | 'video' | 'audio'
  */
 export async function sendMedia(businessConnectionId, chatId, type, fileId, caption) {
+  if (env.TEST_MODE) {
+    log.info({ chatId, type, fileId, caption_preview: String(caption ?? '').slice(0, 80) }, 'SKIPPED media (TEST_MODE)');
+    return { message_id: Math.floor(Math.random() * 1e9), test_mode: true };
+  }
   const methodMap = {
     photo: 'sendPhoto',
     video: 'sendVideo',
@@ -82,6 +94,7 @@ export async function sendMedia(businessConnectionId, chatId, type, fileId, capt
  * @param {number} messageId
  */
 export async function readBusinessMessage(businessConnectionId, chatId, messageId) {
+  if (env.TEST_MODE) return;
   try {
     await getBot().api.raw.readBusinessMessage({
       business_connection_id: businessConnectionId,

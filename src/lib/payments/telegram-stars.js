@@ -1,4 +1,5 @@
 import { agentLogger } from '../logger.js';
+import { env } from '../../config/env.js';
 
 const log = agentLogger('telegram-stars');
 
@@ -24,6 +25,11 @@ export async function sendStarsInvoice(api, chatId, { title, description, amount
   const stars = eurToStars(amountEur);
 
   log.info({ chat_id: chatId, stars, eur: amountEur, payload }, 'sending stars invoice');
+
+  if (env.TEST_MODE) {
+    log.info({ chat_id: chatId, stars, eur: amountEur, payload }, 'SKIPPED stars invoice (TEST_MODE)');
+    return { message_id: Math.floor(Math.random() * 1e9), test_mode: true };
+  }
 
   const options = {
     business_connection_id: businessConnectionId,
