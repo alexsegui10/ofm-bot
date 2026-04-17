@@ -31,3 +31,30 @@ export function estimateCost(model, inputTokens, outputTokens) {
     (outputTokens / 1_000_000) * p.outputPerMTok
   );
 }
+
+// ─── Product pricing — photo singles ──────────────────────────────────────────
+
+// Escalated table. Explicit, not a formula, so copy and code agree.
+// Max 10 per transaction — por encima, Alba sugiere pack personalizado.
+const PHOTO_PRICE_TABLE = Object.freeze({
+  1: 7, 2: 12, 3: 15, 4: 19, 5: 22, 6: 25, 7: 28, 8: 31, 9: 34, 10: 37,
+});
+
+export const PHOTO_MAX_PER_TX = 10;
+
+/**
+ * Price in EUR for `count` individual photos.
+ * Throws if count is out of the [1, 10] range — caller should steer the
+ * client towards a personalised pack instead of silently clamping.
+ *
+ * @param {number} count
+ * @returns {number}
+ */
+export function calculatePhotoPrice(count) {
+  if (!Number.isInteger(count)) throw new Error(`calculatePhotoPrice: count must be an integer, got ${count}`);
+  if (count < 1) throw new Error(`calculatePhotoPrice: count must be >= 1, got ${count}`);
+  if (count > PHOTO_MAX_PER_TX) {
+    throw new Error(`calculatePhotoPrice: count ${count} exceeds max ${PHOTO_MAX_PER_TX} — suggest custom pack`);
+  }
+  return PHOTO_PRICE_TABLE[count];
+}

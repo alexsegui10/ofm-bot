@@ -1,0 +1,261 @@
+{
+  "_metadata": {
+    "version": "v2",
+    "last_updated": "2026-04-17",
+    "notes": "Catálogo maestro. IDs lógicos (v_XXX, pk_XXX, ext_m_XXX). Los file_id reales viven en la tabla `media` y se resuelven por product_id/ordinal. El texto del greeting_catalog se genera dinámicamente con generateGreetingCatalog() a partir de los precios reales — no hardcodear."
+  },
+
+  "videos": [
+    {
+      "id": "v_001",
+      "titulo": "squirt en la ducha",
+      "duracion": "4:00",
+      "precio_eur": 20,
+      "descripcion_corta": "me masturbo en la ducha hasta correrme",
+      "descripcion_jugosa": "este es de los que más me gusta, me masturbo en la ducha con el agua cayendo, gemidos de verdad y squirt al final, lo vas a flipar 😈",
+      "tags": ["squirt", "ducha", "masturbándome"],
+      "destacado": true,
+      "activo": true
+    },
+    {
+      "id": "v_002",
+      "titulo": "follando en tacones",
+      "duracion": "3:30",
+      "precio_eur": 18,
+      "descripcion_corta": "me follan con los tacones puestos",
+      "descripcion_jugosa": "solo llevo los tacones negros puestos, me la meten por detrás y no paro de gemir, se oye todo 🔥",
+      "tags": ["follando", "tacones"],
+      "destacado": true,
+      "activo": true
+    },
+    {
+      "id": "v_003",
+      "titulo": "mamada POV",
+      "duracion": "2:45",
+      "precio_eur": 15,
+      "descripcion_corta": "mamada en primera persona, miro a cámara",
+      "descripcion_jugosa": "te hago una mamada mirándote todo el rato, saliva, arcadas suaves y te pido que me lo eches en la boca 😈",
+      "tags": ["mamada"],
+      "destacado": false,
+      "activo": true
+    },
+    {
+      "id": "v_004",
+      "titulo": "masturbándome con dildo",
+      "duracion": "3:15",
+      "precio_eur": 16,
+      "descripcion_corta": "me meto el dildo hasta el fondo",
+      "descripcion_jugosa": "me abro de piernas para ti y uso mi dildo favorito, muy mojado, me corro al final mordiéndome los labios 🥵",
+      "tags": ["masturbándome", "dildo"],
+      "destacado": false,
+      "activo": true
+    },
+    {
+      "id": "v_005",
+      "titulo": "lencería roja tocándome",
+      "duracion": "2:00",
+      "precio_eur": 12,
+      "descripcion_corta": "me toco con conjunto rojo puesto",
+      "descripcion_jugosa": "conjunto rojo de encaje, me toco por encima de la tela primero y después meto la mano por dentro, pa calentarte rápido 🔥",
+      "tags": ["lencería", "masturbándome"],
+      "destacado": false,
+      "activo": true
+    },
+    {
+      "id": "v_006",
+      "titulo": "squirt fuerte con dildo",
+      "duracion": "4:30",
+      "precio_eur": 22,
+      "descripcion_corta": "dildo + squirt, el más intenso que tengo",
+      "descripcion_jugosa": "uso el dildo más grande, me corro dos veces y al final hago squirt a saco, sábanas empapadas de verdad 💦",
+      "tags": ["squirt", "dildo", "masturbándome"],
+      "destacado": true,
+      "activo": true
+    },
+    {
+      "id": "v_007",
+      "titulo": "ducha rápida jabonándome",
+      "duracion": "1:45",
+      "precio_eur": 10,
+      "descripcion_corta": "me jabono entera en la ducha",
+      "descripcion_jugosa": "cortito pero rico, me jabono tetas y culo bajo el agua caliente, ideal para calentarte sin mucho rollo 😏",
+      "tags": ["ducha"],
+      "destacado": false,
+      "activo": true
+    },
+    {
+      "id": "v_008",
+      "titulo": "follando hasta correrme",
+      "duracion": "4:00",
+      "precio_eur": 20,
+      "descripcion_corta": "me follan duro hasta que me corro",
+      "descripcion_jugosa": "me la meten duro desde varias posturas, me tiemblan las piernas y me corro muy fuerte al final, audio real 🔥",
+      "tags": ["follando", "squirt"],
+      "destacado": false,
+      "activo": true
+    }
+  ],
+
+  "photo_packs": [
+    {
+      "id": "pk_001",
+      "titulo": "culo en tanga roja",
+      "num_fotos": 5,
+      "precio_eur": 15,
+      "descripcion_corta": "5 fotos de mi culo con tanga roja",
+      "descripcion_jugosa": "5 fotos enseñándote el culo con tanga roja desde varios ángulos, en la última me la bajo un poco 🔥",
+      "tags": ["culo", "tanga", "lencería"],
+      "activo": true
+    },
+    {
+      "id": "pk_002",
+      "titulo": "tetas en lencería",
+      "num_fotos": 3,
+      "precio_eur": 12,
+      "descripcion_corta": "3 fotos de mis tetas con lencería",
+      "descripcion_jugosa": "3 fotos con el sujetador favorito, una por dentro y otra sin sujetador, se ve todo 😈",
+      "tags": ["tetas", "lencería"],
+      "activo": true
+    },
+    {
+      "id": "pk_003",
+      "titulo": "ducha jabonosa",
+      "num_fotos": 7,
+      "precio_eur": 18,
+      "descripcion_corta": "7 fotos mojada y con jabón en la ducha",
+      "descripcion_jugosa": "set entero en la ducha, mojada de arriba a abajo con jabón por todo el cuerpo, las últimas son las más calientes 💦",
+      "tags": ["ducha"],
+      "activo": true
+    },
+    {
+      "id": "pk_004",
+      "titulo": "coño primer plano",
+      "num_fotos": 4,
+      "precio_eur": 18,
+      "descripcion_corta": "4 fotos de mi coño en primer plano",
+      "descripcion_jugosa": "4 primeros planos del coño, abiertas y mojada, muy explícito solo para tus ojos 😈",
+      "tags": ["coño"],
+      "activo": true
+    }
+  ],
+
+  "photo_single": {
+    "tags_disponibles": ["culo", "tetas", "coño", "lencería", "tacones", "ducha"],
+    "max_por_transaccion": 10,
+    "sugerencia_pack_personalizado_threshold": 10,
+    "descripcion_para_cliente": "foto suelta de lo que quieras (culo, tetas, coño, lencería, tacones o ducha), 1 son 7€ · 2 son 12€ · 3 son 15€ · máx 10 por pedido",
+    "notas_pricing": "Los precios se calculan con calculatePhotoPrice(n) en src/lib/pricing.js. No hardcodear."
+  },
+
+  "sexting_templates": [
+    {
+      "id": "st_5min",
+      "nombre": "Sexting rápido",
+      "duracion_min": 5,
+      "precio_eur": 15,
+      "descripcion_corta": "5 min de calentura rápida conmigo",
+      "descripcion_jugosa": "5 minutos calientes, te llevo de 0 a correrte rápido, con fotos reales mías entre medias 🔥",
+      "cadencia_target": {
+        "mensajes_por_media_objetivo": 2.5,
+        "mensajes_max_sin_media": 4,
+        "min_segundos_entre_medias": 30
+      },
+      "phases_order": ["warm_up", "teasing", "escalada", "climax", "cool_down"],
+      "phases_duration_target_seg": {
+        "warm_up": 45,
+        "teasing": 75,
+        "escalada": 120,
+        "climax": 45,
+        "cool_down": 15
+      },
+      "media_pool": [
+        { "media_id": "ext_m_001", "phase_hint": "warm_up",  "order_hint": 1, "caption_base": "estoy en la cama pensando en ti bebe",           "intensity": "low",    "is_climax_media": false },
+        { "media_id": "ext_m_002", "phase_hint": "teasing",  "order_hint": 2, "caption_base": "mira cómo se me ponen los pezones",               "intensity": "medium", "is_climax_media": false },
+        { "media_id": "ext_m_003", "phase_hint": "escalada", "order_hint": 3, "caption_base": "no aguanto más, me estoy tocando",                "intensity": "high",   "is_climax_media": false },
+        { "media_id": "ext_m_004", "phase_hint": "climax",   "order_hint": 4, "caption_base": "me corro bebe",                                   "intensity": "peak",   "is_climax_media": true  }
+      ]
+    },
+    {
+      "id": "st_10min",
+      "nombre": "Sexting completo",
+      "duracion_min": 10,
+      "precio_eur": 30,
+      "descripcion_corta": "10 min de sexting completo, me corro contigo 💦",
+      "descripcion_jugosa": "10 minutos jugando contigo, te mando fotos mías reales y vamos subiendo hasta que me corro, audio no hace falta 😈",
+      "cadencia_target": {
+        "mensajes_por_media_objetivo": 2.5,
+        "mensajes_max_sin_media": 4,
+        "min_segundos_entre_medias": 45
+      },
+      "phases_order": ["warm_up", "teasing", "escalada", "climax", "cool_down"],
+      "phases_duration_target_seg": {
+        "warm_up": 90,
+        "teasing": 120,
+        "escalada": 240,
+        "climax": 90,
+        "cool_down": 60
+      },
+      "media_pool": [
+        { "media_id": "ext_m_101", "phase_hint": "warm_up",  "order_hint": 1, "caption_base": "acabo de salir de la ducha bebe",                "intensity": "low",    "is_climax_media": false },
+        { "media_id": "ext_m_102", "phase_hint": "warm_up",  "order_hint": 2, "caption_base": "mira mi ropa de ahora mismo",                    "intensity": "low",    "is_climax_media": false },
+        { "media_id": "ext_m_103", "phase_hint": "teasing",  "order_hint": 3, "caption_base": "me estoy quitando el sujetador",                 "intensity": "medium", "is_climax_media": false },
+        { "media_id": "ext_m_104", "phase_hint": "teasing",  "order_hint": 4, "caption_base": "mira cómo se me marca con la braguita",          "intensity": "medium", "is_climax_media": false },
+        { "media_id": "ext_m_105", "phase_hint": "escalada", "order_hint": 5, "caption_base": "sin braguita ya, mira lo mojada que estoy",      "intensity": "high",   "is_climax_media": false },
+        { "media_id": "ext_m_106", "phase_hint": "escalada", "order_hint": 6, "caption_base": "me estoy metiendo dos dedos",                    "intensity": "high",   "is_climax_media": false },
+        { "media_id": "ext_m_107", "phase_hint": "escalada", "order_hint": 7, "caption_base": "uff bebe no aguanto",                            "intensity": "high",   "is_climax_media": false },
+        { "media_id": "ext_m_108", "phase_hint": "climax",   "order_hint": 8, "caption_base": "me estoy corriendo contigo",                     "intensity": "peak",   "is_climax_media": true  }
+      ]
+    },
+    {
+      "id": "st_15min",
+      "nombre": "Sexting largo",
+      "duracion_min": 15,
+      "precio_eur": 45,
+      "descripcion_corta": "15 min de sexting largo, jugamos todo el rato 😈",
+      "descripcion_jugosa": "15 minutos solo para ti, vamos despacio al principio y me corro dos veces si aguantas, fotos exclusivas entre medias 🔥",
+      "cadencia_target": {
+        "mensajes_por_media_objetivo": 2.5,
+        "mensajes_max_sin_media": 4,
+        "min_segundos_entre_medias": 50
+      },
+      "phases_order": ["warm_up", "teasing", "escalada", "climax", "cool_down"],
+      "phases_duration_target_seg": {
+        "warm_up": 120,
+        "teasing": 180,
+        "escalada": 420,
+        "climax": 120,
+        "cool_down": 60
+      },
+      "media_pool": [
+        { "media_id": "ext_m_201", "phase_hint": "warm_up",  "order_hint": 1,  "caption_base": "hola bebe, estoy sola en casa",                 "intensity": "low",    "is_climax_media": false },
+        { "media_id": "ext_m_202", "phase_hint": "warm_up",  "order_hint": 2,  "caption_base": "llevo solo una camiseta encima",                "intensity": "low",    "is_climax_media": false },
+        { "media_id": "ext_m_203", "phase_hint": "teasing",  "order_hint": 3,  "caption_base": "mira cómo se me transparenta",                  "intensity": "medium", "is_climax_media": false },
+        { "media_id": "ext_m_204", "phase_hint": "teasing",  "order_hint": 4,  "caption_base": "me estoy quitando la ropa poco a poco",         "intensity": "medium", "is_climax_media": false },
+        { "media_id": "ext_m_205", "phase_hint": "teasing",  "order_hint": 5,  "caption_base": "solo con tanga ya, me la toco por encima",      "intensity": "medium", "is_climax_media": false },
+        { "media_id": "ext_m_206", "phase_hint": "escalada", "order_hint": 6,  "caption_base": "estoy muy mojada bebe, tócame tú",              "intensity": "high",   "is_climax_media": false },
+        { "media_id": "ext_m_207", "phase_hint": "escalada", "order_hint": 7,  "caption_base": "con los dedos no me vale ya",                   "intensity": "high",   "is_climax_media": false },
+        { "media_id": "ext_m_208", "phase_hint": "escalada", "order_hint": 8,  "caption_base": "cogí el dildo, mira cómo entra",                "intensity": "high",   "is_climax_media": false },
+        { "media_id": "ext_m_209", "phase_hint": "escalada", "order_hint": 9,  "caption_base": "a cuatro patas para ti",                        "intensity": "high",   "is_climax_media": false },
+        { "media_id": "ext_m_210", "phase_hint": "escalada", "order_hint": 10, "caption_base": "uff ya no aguanto más bebe",                    "intensity": "high",   "is_climax_media": false },
+        { "media_id": "ext_m_211", "phase_hint": "climax",   "order_hint": 11, "caption_base": "me estoy corriendo, mírame",                    "intensity": "peak",   "is_climax_media": true  },
+        { "media_id": "ext_m_212", "phase_hint": "climax",   "order_hint": 12, "caption_base": "otra vez me corro contigo",                     "intensity": "peak",   "is_climax_media": true  }
+      ]
+    }
+  ],
+
+  "videollamada": {
+    "precio_por_minuto": 4,
+    "minimo_minutos": 5,
+    "precio_minimo": 20,
+    "requiere_handoff": true,
+    "descripcion_corta": "videollamada 4€/min, mínimo 5 min",
+    "descripcion_jugosa": "videollamada privada conmigo, muevo lo que me pidas, mínimo 5 min y a partir de ahí lo que quieras 🔥"
+  },
+
+  "personalizado": {
+    "precio_minimo": 45,
+    "requiere_handoff": true,
+    "descripcion_corta": "video personalizado desde 45€",
+    "descripcion_jugosa": "me dices qué quieres que haga, con qué ropa y cómo terminar, te lo grabo solo para ti desde 45€ 😈"
+  }
+}

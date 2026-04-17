@@ -5,7 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     pool: 'forks', // prevent fake-timer state leaking between test files
-    include: ['src/**/*.test.js'],
+    include: ['src/**/*.test.js', 'scripts/tests/**/*.test.js'],
     coverage: {
       reporter: ['text', 'lcov'],
       include: ['src/**/*.js'],
