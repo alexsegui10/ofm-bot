@@ -30,7 +30,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { PRIORITY_1 } from './scenarios.js';
+import { PRIORITY_1 as PRIORITY_1_LEGACY } from './tests-legacy/scenarios.js';
+import { PRIORITY_1 as PRIORITY_1_V2 } from './scenarios-v2.js';
 import { runScenario, closePool } from './fake-client.js';
 import { createEvaluator } from './evaluate-response.js';
 import { TEST_CHAT_IDS } from './reset-test-client.js';
@@ -57,6 +58,7 @@ function parseArgs() {
     mode: args.mode || 'baseline',
     only: args.only || null,           // CSV de IDs: "A1,A3"
     skipReset: Boolean(args.skipReset),
+    scenariosV2: Boolean(args['scenarios-v2'] || args.scenariosV2),
   };
 }
 
@@ -248,11 +250,15 @@ async function main() {
   await checkServerHealth();
   log('Server health OK');
 
+  // Escoger set de escenarios (legacy por defecto para no romper flujos antiguos)
+  const basePriority1 = args.scenariosV2 ? PRIORITY_1_V2 : PRIORITY_1_LEGACY;
+  log(`scenario-set=${args.scenariosV2 ? 'v2' : 'legacy'} (${basePriority1.length} escenarios P1)`);
+
   // Filtro opcional
-  let scenarios = PRIORITY_1;
+  let scenarios = basePriority1;
   if (args.only) {
     const ids = new Set(args.only.split(',').map((s) => s.trim()));
-    scenarios = PRIORITY_1.filter((s) => ids.has(s.id));
+    scenarios = basePriority1.filter((s) => ids.has(s.id));
     log(`Filtrado a ${scenarios.length} escenarios: ${[...ids].join(', ')}`);
   }
 
