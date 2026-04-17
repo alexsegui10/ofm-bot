@@ -1,4 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
+
+// Unit tests exercise the production path (real API calls). Override TEST_MODE so
+// the SKIP short-circuit in sendStarsInvoice does not swallow the api.sendInvoice call.
+vi.mock('../../config/env.js', () => ({ env: { TEST_MODE: false } }));
+
 import {
   eurToStars,
   sendStarsInvoice,
