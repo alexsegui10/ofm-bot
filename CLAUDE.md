@@ -10,7 +10,10 @@ gestiona sexting con timer, y escala a humano vía WhatsApp para videollamadas y
 - **Servidor:** Express para webhooks
 - **Base de datos:** PostgreSQL en Docker
 - **Mensajería:** Telegram Bot API + Business Connection
-- **LLMs:** Anthropic SDK (claude-sonnet-4-6 para Router/Profile/Quality/Sales/Curator/Handoff), OpenRouter (Llama 3 Lumimaid 70B para Persona, intercambiable vía .env)
+- **LLMs:**
+  - Anthropic SDK — `claude-sonnet-4-6` para Router / Profile / Quality Gate / Sales / Curator / Handoff (temperatura 0.3)
+  - OpenRouter (Persona) — primario `xai/grok-3-beta` (temp 0.75 catálogo / 0.9 sexting), fallback `cognitivecomputations/dolphin-mistral-24b-venice-edition`
+  - Todos los modelos intercambiables vía `.env` (`MODEL_ROUTER`, `MODEL_PERSONA`, `MODEL_PERSONA_FALLBACK`)
 - **Pagos:** NowPayments (crypto), PayPal, Telegram Stars (XTR)
 - **WhatsApp:** Twilio
 
