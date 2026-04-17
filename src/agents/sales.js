@@ -3,6 +3,8 @@ import { createInvoice, getAvailableCurrencies } from '../lib/payments/nowpaymen
 import { createTransaction } from '../lib/transactions.js';
 import { initiateBizumPayment } from './payment-verifier.js';
 import { env } from '../config/env.js';
+import { getProducts } from '../config/products.js';
+import { calculatePhotoPrice } from '../lib/pricing.js';
 
 const log = agentLogger('sales');
 
@@ -181,4 +183,125 @@ export async function runSales({
   }
 
   throw new Error(`runSales: unknown paymentMethod "${paymentMethod}"`);
+}
+
+// ─── Product v2 offer ────────────────────────────────────────────────────────
+
+/**
+ * Resuelve un productId v2 (del catálogo `products.json`) a los parámetros de
+ * runSales y genera la oferta de pago.
+ *
+ * Acepta:
+ *   - "v_001", "v_008"...  → video individual
+ *   - "pk_001", "pk_004"...→ pack de fotos
+ *   - "st_5min", "st_10min", "st_15min" → plantilla de sexting
+ *   - "singles:<tag>:<count>" → fotos sueltas por tag (precio con calculatePhotoPrice)
+ *   - "videocall:<minutes>" → videollamada (mín 5 min)
+ *   - "custom" → personalizado (precio mínimo)
+ *
+ * @param {{
+ *   productId: string,
+ *   client: object,
+ *   paymentMethod?: 'crypto'|'bizum'|'stars',
+ * }} params
+ * @returns {Promise<ReturnType<typeof runSales> | null>}  Null si el productId es
+ *          desconocido o inactivo (el caller responde al cliente con un mensaje).
+ */
+export async function createOfferFromProduct({ productId, client, paymentMethod = 'crypto' }) {
+  if (!productId) return null;
+  const products = getProducts();
+
+  // ─── Video individual ─────────────────────────────────────────────────────
+  if (/^v_\d+$/.test(productId)) {
+    const v = products.videos.find((x) => x.id === productId && x.activo);
+    if (!v) return null;
+    return runSales({
+      intent: 'choose_video',
+      client,
+      amountEur: v.precio_eur,
+      productType: 'video',
+      productId,
+      description: v.titulo,
+      paymentMethod,
+    });
+  }
+
+  // ─── Pack de fotos ────────────────────────────────────────────────────────
+  if (/^pk_\d+$/.test(productId)) {
+    const pk = products.photo_packs.find((x) => x.id === productId && x.activo);
+    if (!pk) return null;
+    return runSales({
+      intent: 'choose_pack',
+      client,
+      amountEur: pk.precio_eur,
+      productType: 'pack',
+      productId,
+      description: pk.titulo,
+      paymentMethod,
+    });
+  }
+
+  // ─── Sexting template ─────────────────────────────────────────────────────
+  if (/^st_\d+min$/.test(productId)) {
+    const st = products.sexting_templates.find((x) => x.id === productId);
+    if (!st) return null;
+    return runSales({
+      intent: 'buy_sexting_template',
+      client,
+      amountEur: st.precio_eur,
+      productType: 'sexting',
+      productId,
+      description: `Sexting ${st.duracion_min} min`,
+      paymentMethod,
+    });
+  }
+
+  // ─── Singles: "singles:culo:2" ────────────────────────────────────────────
+  if (productId.startsWith('singles:')) {
+    const [, tag, countStr] = productId.split(':');
+    const count = Number(countStr);
+    if (!tag || !Number.isInteger(count)) return null;
+    if (!products.photo_single.tags_disponibles.includes(tag)) return null;
+    const amount = calculatePhotoPrice(count); // puede lanzar si count > 10
+    return runSales({
+      intent: 'buy_single_photos',
+      client,
+      amountEur: amount,
+      productType: 'photos',
+      productId,
+      description: `${count} ${count === 1 ? 'foto' : 'fotos'} de ${tag}`,
+      paymentMethod,
+    });
+  }
+
+  // ─── Videollamada: "videocall:7" ─────────────────────────────────────────
+  if (productId.startsWith('videocall:')) {
+    const mins = Number(productId.split(':')[1]);
+    if (!Number.isInteger(mins) || mins < products.videollamada.minimo_minutos) return null;
+    return runSales({
+      intent: 'videocall_request',
+      client,
+      amountEur: mins * products.videollamada.precio_por_minuto,
+      productType: 'videocall',
+      productId,
+      description: `Videollamada ${mins} min`,
+      paymentMethod,
+    });
+  }
+
+  // ─── Personalizado ────────────────────────────────────────────────────────
+  if (productId === 'custom') {
+    return runSales({
+      intent: 'custom_video_request',
+      client,
+      amountEur: products.personalizado.precio_minimo,
+      productType: 'custom',
+      productId: 'custom',
+      description: 'Video personalizado',
+      paymentMethod,
+    });
+  }
+
+  log.warn({ productId }, 'createOfferFromProduct: unknown productId');
+  return null;
 }

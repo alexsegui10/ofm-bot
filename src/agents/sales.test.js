@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { runSales } from './sales.js';
+import { runSales, createOfferFromProduct } from './sales.js';
 
 vi.mock('../lib/payments/nowpayments.js', () => ({
   createInvoice: vi.fn(),
@@ -157,5 +157,107 @@ describe('runSales — unknown method', () => {
     await expect(
       runSales({ intent: 'sale_intent_photos', client: CLIENT, amountEur: 10, description: 'test', paymentMethod: 'venmo' }),
     ).rejects.toThrow('unknown paymentMethod');
+  });
+});
+
+// ─── createOfferFromProduct ──────────────────────────────────────────────────
+
+describe('createOfferFromProduct', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    createInvoice.mockResolvedValue({
+      id: 'inv_x', invoice_url: 'https://np/x', pay_currency: 'usdttrc20',
+    });
+  });
+
+  it('resolves a video by id → amount matches products.json', async () => {
+    const offer = await createOfferFromProduct({
+      productId: 'v_001', client: CLIENT, paymentMethod: 'bizum',
+    });
+    expect(offer).toBeTruthy();
+    expect(offer.paymentMethod).toBe('bizum');
+    // v_001 es "squirt en la ducha" a 20€
+    expect(initiateBizumPayment).toHaveBeenCalledWith(expect.objectContaining({
+      amountEur: 20, productType: 'video', productId: 'v_001',
+    }));
+  });
+
+  it('resolves a pack by id', async () => {
+    const offer = await createOfferFromProduct({
+      productId: 'pk_002', client: CLIENT, paymentMethod: 'bizum',
+    });
+    expect(offer).toBeTruthy();
+    // pk_002 = "tetas en lencería" a 12€
+    expect(initiateBizumPayment).toHaveBeenCalledWith(expect.objectContaining({
+      amountEur: 12, productType: 'pack', productId: 'pk_002',
+    }));
+  });
+
+  it('resolves a sexting template by id', async () => {
+    const offer = await createOfferFromProduct({
+      productId: 'st_10min', client: CLIENT, paymentMethod: 'bizum',
+    });
+    expect(offer).toBeTruthy();
+    // st_10min a 30€
+    expect(initiateBizumPayment).toHaveBeenCalledWith(expect.objectContaining({
+      amountEur: 30, productType: 'sexting', productId: 'st_10min',
+    }));
+  });
+
+  it('resolves singles with calculatePhotoPrice', async () => {
+    const offer = await createOfferFromProduct({
+      productId: 'singles:culo:2', client: CLIENT, paymentMethod: 'bizum',
+    });
+    // 2 fotos = 12€ (table PHOTO_PRICE_TABLE)
+    expect(initiateBizumPayment).toHaveBeenCalledWith(expect.objectContaining({
+      amountEur: 12, productType: 'photos',
+    }));
+    expect(offer.message).toMatch(/12€/);
+  });
+
+  it('throws on singles count > 10', async () => {
+    await expect(
+      createOfferFromProduct({ productId: 'singles:culo:15', client: CLIENT }),
+    ).rejects.toThrow(/exceeds max/);
+  });
+
+  it('returns null for unknown productId', async () => {
+    const offer = await createOfferFromProduct({
+      productId: 'v_999', client: CLIENT,
+    });
+    expect(offer).toBeNull();
+  });
+
+  it('returns null for unknown tag in singles', async () => {
+    const offer = await createOfferFromProduct({
+      productId: 'singles:pies:2', client: CLIENT,
+    });
+    expect(offer).toBeNull();
+  });
+
+  it('resolves videocall by minutes', async () => {
+    const offer = await createOfferFromProduct({
+      productId: 'videocall:7', client: CLIENT, paymentMethod: 'bizum',
+    });
+    // 7 min * 4€ = 28€
+    expect(initiateBizumPayment).toHaveBeenCalledWith(expect.objectContaining({
+      amountEur: 28, productType: 'videocall',
+    }));
+  });
+
+  it('rejects videocall under mínimo', async () => {
+    const offer = await createOfferFromProduct({
+      productId: 'videocall:3', client: CLIENT,
+    });
+    expect(offer).toBeNull();
+  });
+
+  it('resolves custom personalizado', async () => {
+    const offer = await createOfferFromProduct({
+      productId: 'custom', client: CLIENT, paymentMethod: 'bizum',
+    });
+    expect(initiateBizumPayment).toHaveBeenCalledWith(expect.objectContaining({
+      amountEur: 45, productType: 'custom',
+    }));
   });
 });
