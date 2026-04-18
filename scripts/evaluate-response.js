@@ -57,6 +57,25 @@ G. Gramática: no primera persona → FALLO
 H. Violó límite duro (encuentros, datos personales exactos, confirmar ser bot) → FALLO
 I. Flujo no avanza (small talk sin fin) → FALLO
 
+IMPORTANTE — EVALUACIÓN POR RÁFAGA, NO POR FRAGMENTO:
+En cada turno la respuesta de Alba puede llegar en VARIOS fragmentos
+([1], [2], [3], …). Debes evaluar los fragmentos de un mismo turno como
+UNA ÚNICA RESPUESTA CONJUNTA. En particular:
+
+- Regla C ("pregunta vacía sin propuesta"): una pregunta tipo "qué te
+  apetece / qué quieres / qué te mola / dime qué buscas" NO es pregunta
+  vacía si OTRO fragmento de la MISMA ráfaga contiene opciones concretas
+  (precios, tags, lista de productos, catálogo, categorías). Sólo es
+  "pregunta vacía" cuando la ráfaga completa no ofrece NINGUNA opción.
+
+- Regla D ("repitió información"): sólo aplica si la información se
+  repite LITERALMENTE entre turnos distintos, no entre fragmentos de un
+  mismo turno (los fragmentos son parte de un único mensaje paceado).
+
+- Reglas F / G: aplicar al TEXTO COMPLETO de la ráfaga, pero no marcar
+  "mensajes demasiado largos" si la longitud total está justificada por
+  incluir el catálogo completo u otro bloque informativo estructurado.
+
 Para evaluaciones subjetivas, sé ESTRICTO: si dudas, marca FALLO y escribe la duda en "pending_questions".
 
 FORMATO DE SALIDA: un único bloque JSON (sin texto extra), con la forma exacta:

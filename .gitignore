@@ -46,3 +46,6 @@ pgdata/
 # Temporary files
 *.tmp
 *.temp
+
+# Generated test outputs (raw dumps from auto-iterate / fuzz)
+scripts/fuzz-results.json
