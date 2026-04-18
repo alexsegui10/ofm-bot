@@ -18,6 +18,11 @@ import {
   matchSextingTemplateFromText,
   parseSinglePhotoRequest,
 } from './lib/content-dispatcher.js';
+import {
+  setPendingProduct,
+  getPendingProduct,
+  clearPendingProduct,
+} from './lib/pending-product.js';
 
 const log = agentLogger('orchestrator');
 
@@ -200,6 +205,14 @@ async function handleV2Intent({ intent, text, client, chatId, start }) {
     try {
       const offer = await createOfferFromProduct({ productId, client, paymentMethod });
       if (!offer) return null;
+      // FIX 2 (T2): persist the chosen product so a subsequent
+      // payment_method_selection can recover the exact price instead of
+      // re-resolving via the legacy keyword path (which alucinaba 7€).
+      try {
+        await setPendingProduct(client.id, offer.productId, offer.amountEur);
+      } catch (err) {
+        log.warn({ err, client_id: client.id, product_id: offer.productId }, 'setPendingProduct failed (non-fatal)');
+      }
       await saveMessage(client.id, 'assistant', offer.message, intent);
       const fragments = fragmentMessage(offer.message, cfg);
       const starsInvoice = offer.paymentMethod === 'stars' ? {
@@ -229,6 +242,12 @@ async function handleV2Intent({ intent, text, client, chatId, start }) {
         paymentMethod,
       });
       if (!offer) return null;
+      // FIX 2 (T2): persist the chosen single-photos offer.
+      try {
+        await setPendingProduct(client.id, offer.productId, offer.amountEur);
+      } catch (err) {
+        log.warn({ err, client_id: client.id, product_id: offer.productId }, 'setPendingProduct failed (non-fatal)');
+      }
       await saveMessage(client.id, 'assistant', offer.message, intent);
       const fragments = fragmentMessage(offer.message, cfg);
       const starsInvoice = offer.paymentMethod === 'stars' ? {
@@ -365,6 +384,13 @@ export async function handleMessage({
       client.id, chatId, businessConnectionId, updatedClient ?? client,
     );
     if (bizumMsg) {
+      // FIX 2 (T2): payment confirmed → clear the pending product so a
+      // future message starts a fresh sale cycle instead of re-billing.
+      try {
+        await clearPendingProduct(client.id);
+      } catch (err) {
+        log.warn({ err, client_id: client.id }, 'clearPendingProduct after bizum failed (non-fatal)');
+      }
       await saveMessage(client.id, 'assistant', bizumMsg, intent);
       const cfg = getPacerConfig();
       const frags = fragmentMessage(bizumMsg, cfg);
@@ -535,36 +561,84 @@ export async function handleMessage({
     }
   } else if (SALE_INTENTS.has(resolvedIntent)) {
     // Case 5 / 6: Payment method selected → generate payment link
-    const inferredIntent = detectProductIntentFromHistory(history, text);
-    const product = resolveProduct(inferredIntent);
-    if (product) {
-      const paymentMethod = detectPaymentMethod(text);
+    const paymentMethod = detectPaymentMethod(text);
+
+    // FIX 2 (T2): prefer the pending_product_id persisted in the previous
+    // turn (v2 choose_video / choose_pack / buy_sexting_template /
+    // buy_single_photos) so the price matches what Alba already quoted.
+    const pending = await getPendingProduct(client.id);
+
+    if (pending) {
       try {
-        const offer = await runSales({
-          intent: inferredIntent,
+        const offer = await createOfferFromProduct({
+          productId: pending.productId,
           client: updatedClient ?? client,
-          amountEur: product.amountEur,
-          productType: product.productType,
-          productId: product.productId,
-          description: product.description,
           paymentMethod,
         });
-
-        saleFragments = fragmentMessage(offer.message, config);
-
-        if (paymentMethod === 'stars') {
-          starsInvoice = {
-            amountEur:   offer.amountEur,
-            description: offer.description,
-            productType: offer.productType,
-            productId:   offer.productId,
-            payload:     offer.paymentId,
-          };
+        if (offer) {
+          saleFragments = fragmentMessage(offer.message, config);
+          if (offer.paymentMethod === 'stars') {
+            starsInvoice = {
+              amountEur:   offer.amountEur,
+              description: offer.description,
+              productType: offer.productType,
+              productId:   offer.productId,
+              payload:     offer.paymentId,
+            };
+          }
+          log.info({ intent: resolvedIntent, payment_method: paymentMethod, amount_eur: offer.amountEur, product_id: pending.productId, source: 'pending' }, 'sales offer generated (from pending)');
+        } else {
+          log.warn({ product_id: pending.productId }, 'pending product yielded null offer — falling back to legacy resolver');
         }
-
-        log.info({ intent: resolvedIntent, payment_method: paymentMethod, amount_eur: product.amountEur }, 'sales offer generated');
       } catch (err) {
-        log.error({ err, intent: resolvedIntent }, 'runSales failed — skipping offer');
+        log.error({ err, product_id: pending.productId }, 'createOfferFromProduct(pending) failed — falling back to legacy');
+      }
+    }
+
+    // No pending (or it failed) → legacy path: re-resolve via keyword inference.
+    if (saleFragments.length === 0) {
+      // FIX 2 (T2): if there is genuinely no context to bill against, do NOT
+      // hallucinate a default price. Ask the client to clarify.
+      const lastBot = [...history].reverse().find((m) => m.role === 'assistant');
+      const recentClientText = (history.filter((m) => m.role === 'user').slice(-3).map((m) => m.content).join(' ') + ' ' + text).toLowerCase();
+      const hasAnyProductHint = /(foto|video|sexting|videollamada|personaliz|pack)/.test(recentClientText)
+        || (lastBot && /\d+€/.test(lastBot.content));
+
+      if (!hasAnyProductHint) {
+        saleFragments = fragmentMessage('espera bebe, qué querías exactamente? 😈', config);
+        log.warn({ intent: resolvedIntent, chat_id: chatId }, 'payment_method_selection without product context — asking for clarification');
+      } else {
+        const inferredIntent = detectProductIntentFromHistory(history, text);
+        const product = resolveProduct(inferredIntent);
+        if (product) {
+          try {
+            const offer = await runSales({
+              intent: inferredIntent,
+              client: updatedClient ?? client,
+              amountEur: product.amountEur,
+              productType: product.productType,
+              productId: product.productId,
+              description: product.description,
+              paymentMethod,
+            });
+
+            saleFragments = fragmentMessage(offer.message, config);
+
+            if (paymentMethod === 'stars') {
+              starsInvoice = {
+                amountEur:   offer.amountEur,
+                description: offer.description,
+                productType: offer.productType,
+                productId:   offer.productId,
+                payload:     offer.paymentId,
+              };
+            }
+
+            log.info({ intent: resolvedIntent, payment_method: paymentMethod, amount_eur: product.amountEur, source: 'legacy' }, 'sales offer generated (legacy path)');
+          } catch (err) {
+            log.error({ err, intent: resolvedIntent }, 'runSales failed — skipping offer');
+          }
+        }
       }
     }
   }

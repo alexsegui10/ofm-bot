@@ -196,9 +196,12 @@ describe('handleMessage — E2E pipeline (mocked LLMs)', () => {
   });
 
   it('calls runSales for payment_method_selection with inferred product from history', async () => {
-    // Seed a prior message so the client is not new (new clients get short-circuited)
-    mockLLMs('small_talk', 'hola');
-    await handleMessage({ text: 'hola', chatId: CHAT_ID, businessConnectionId: CONN_ID, fromId: 42 });
+    // Seed a prior turn with product context so the legacy resolver can infer
+    // sale_intent_photos when no pending_product_id is present.
+    // (FIX 2 (T2): orchestrator now refuses to bill when there is zero
+    // product context, so the seed must mention a product.)
+    mockLLMs('sale_intent_photos', 'claro bebe');
+    await handleMessage({ text: 'quiero fotos', chatId: CHAT_ID, businessConnectionId: CONN_ID, fromId: 42 });
     vi.clearAllMocks();
 
     mockLLMs('payment_method_selection', 'dale bebe ahora mismo te lo genero');
@@ -210,9 +213,9 @@ describe('handleMessage — E2E pipeline (mocked LLMs)', () => {
   });
 
   it('returns starsInvoice when payment method is stars on payment_method_selection', async () => {
-    // Seed a prior message so the client is not new
-    mockLLMs('small_talk', 'hola');
-    await handleMessage({ text: 'hola', chatId: CHAT_ID, businessConnectionId: CONN_ID, fromId: 42 });
+    // Seed a prior turn with product context (see note in previous test).
+    mockLLMs('sale_intent_photos', 'claro bebe');
+    await handleMessage({ text: 'quiero fotos', chatId: CHAT_ID, businessConnectionId: CONN_ID, fromId: 42 });
     vi.clearAllMocks();
 
     runSales.mockResolvedValueOnce({
