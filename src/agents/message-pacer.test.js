@@ -232,11 +232,24 @@ describe('queueMessage', () => {
   });
 
   it('calls processFn with concatenated text after delay', async () => {
-    const processFn = vi.fn().mockResolvedValue(undefined);
-    const fastConfig = { ...CONFIG, entry_delay: { min_seconds: 0.01, max_seconds: 0.01, per_word_ms: 0 } };
-    queueMessage(55555, 'conn_a', 'hola', processFn, fastConfig);
-    await new Promise((r) => setTimeout(r, 100));
-    expect(processFn).toHaveBeenCalledWith('hola');
+    vi.useFakeTimers();
+    try {
+      const processFn = vi.fn().mockResolvedValue(undefined);
+      // Force testing_mode to bypass sleep_hours / active_hours / per_word logic so
+      // the test is deterministic regardless of wall-clock at runtime.
+      const fastConfig = {
+        ...CONFIG,
+        testing_mode: true,
+        testing_delay_ms_min: 10,
+        testing_delay_ms_max: 10,
+      };
+      queueMessage(55555, 'conn_a', 'hola', processFn, fastConfig);
+      // entry delay is exactly 10ms in testing_mode; advance well past it
+      await vi.advanceTimersByTimeAsync(50);
+      expect(processFn).toHaveBeenCalledWith('hola');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('uses sexting delay when sextingPhaseIndex is provided', () => {
