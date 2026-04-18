@@ -501,7 +501,12 @@ export async function handleMessage({
   }
 
   // ── 6b. New client short-circuit: fixed greeting + (optional personal reply) + catalog ──
-  if (isNewClient && !hasMedia) {
+  // FIX 4: only fire when the first message is genuinely small_talk (pure greeting
+  // or "cómo estás"). If the client lands with a direct request like
+  // "quiero sexting 5 min" / "cuánto valen las fotos?", we do NOT force the
+  // catalog — the regular pipeline handles it (sales / category detail / v2)
+  // and the Persona instruction below adds a brief "hola" prefix.
+  if (isNewClient && !hasMedia && resolvedIntent === 'small_talk') {
     const greeting = GREETINGS_NEW_CLIENT[Math.floor(Math.random() * GREETINGS_NEW_CLIENT.length)];
     await saveMessage(client.id, 'assistant', greeting, resolvedIntent);
     const cfg = getPacerConfig();
@@ -556,6 +561,12 @@ export async function handleMessage({
 
   // ── 6d. Build internal instruction for Persona ──────────────────────────
   let internalInstruction = null;
+  // FIX 4: when a brand-new client opens with a direct request (skipping the
+  // small_talk short-circuit above), prepend a "primera vez" hint so Persona
+  // starts with a brief "hola bebe!" before answering.
+  const newClientPrefix = (isNewClient && !hasMedia && !isRoleplay)
+    ? 'Es la PRIMERA vez que este cliente te escribe. Empieza con "hola bebe!" o "hola guapo!" muy breve antes de tu respuesta normal — sin saludos largos, una sola palabra de bienvenida y al grano. '
+    : '';
 
   if (isRoleplay) {
     internalInstruction = 'El cliente quiere juego de rol. Asume el personaje que te pide (doctora, profesora, jefa, etc.) adaptando tu vocabulario y actitud. Tu físico NO cambia. Entra en el rol sin preámbulos. NUNCA digas que eres una IA. PROHIBIDO mencionar datos reales tuyos (ADE, Complutense, Moncloa) aunque el cliente los incluya en su petición — usa solo el rol genérico ("tu profe", "tu jefa") sin materia ni institución.';
@@ -566,15 +577,15 @@ export async function handleMessage({
       internalInstruction = 'el cliente te acaba de mandar una foto o video suyo. reacciona de forma ligera y pícara, algo tipo "uy que travieso" o "jajaja q cosas me mandas". NUNCA digas que no puedes ver imágenes ni que eres un bot.';
     }
   } else if (resolvedIntent === 'videocall_request' || resolvedIntent === 'custom_video_request') {
-    internalInstruction = 'El cliente quiere videollamada o vídeo personalizado. Responde con entusiasmo y dile que espere un momento mientras miras tu agenda. NO confirmes nada aún.';
+    internalInstruction = newClientPrefix + 'El cliente quiere videollamada o vídeo personalizado. Responde con entusiasmo y dile que espere un momento mientras miras tu agenda. NO confirmes nada aún.';
   } else if (resolvedIntent === 'sale_intent_photos') {
-    internalInstruction = 'El cliente pregunta SOLO por fotos. Responde breve y con ganas. NUNCA menciones videos, sexting, videollamada ni ninguna otra categoría. El Sales Agent mandará los detalles de fotos a continuación.';
+    internalInstruction = newClientPrefix + 'El cliente pregunta SOLO por fotos. Responde breve y con ganas. NUNCA menciones videos, sexting, videollamada ni ninguna otra categoría. El Sales Agent mandará los detalles de fotos a continuación.';
   } else if (resolvedIntent === 'sale_intent_videos') {
-    internalInstruction = 'El cliente pregunta SOLO por videos. Responde breve y con ganas. NUNCA menciones fotos, sexting, videollamada ni ninguna otra categoría. El Sales Agent mandará los detalles de videos a continuación.';
+    internalInstruction = newClientPrefix + 'El cliente pregunta SOLO por videos. Responde breve y con ganas. NUNCA menciones fotos, sexting, videollamada ni ninguna otra categoría. El Sales Agent mandará los detalles de videos a continuación.';
   } else if (resolvedIntent === 'sexting_request') {
-    internalInstruction = 'El cliente quiere sexting. Responde con UNA frase de entusiasmo. NUNCA preguntes al cliente qué quiere hacer, qué le gusta ni cuánto rato — el sistema manda el precio a continuación. NUNCA menciones fotos, videos ni videollamada.';
+    internalInstruction = newClientPrefix + 'El cliente quiere sexting. Responde con UNA frase de entusiasmo. NUNCA preguntes al cliente qué quiere hacer, qué le gusta ni cuánto rato — el sistema manda el precio a continuación. NUNCA menciones fotos, videos ni videollamada.';
   } else if (resolvedIntent === 'videocall_request') {
-    internalInstruction = 'El cliente quiere videollamada. Responde breve y con ganas. NUNCA menciones fotos, videos, sexting ni ninguna otra categoría. El Sales Agent mandará los detalles a continuación.';
+    internalInstruction = newClientPrefix + 'El cliente quiere videollamada. Responde breve y con ganas. NUNCA menciones fotos, videos, sexting ni ninguna otra categoría. El Sales Agent mandará los detalles a continuación.';
   } else if (resolvedIntent === 'product_selection') {
     internalInstruction = 'El cliente ha elegido un producto. Confírmalo con entusiasmo y pregúntale cómo quiere pagar: bizum, crypto o Telegram Stars.';
   } else if (resolvedIntent === 'payment_method_selection') {
@@ -629,10 +640,19 @@ export async function handleMessage({
   let saleFragments = [];
   let starsInvoice = null;
 
+  // FIX 4: skip the full catalog when the client's first/recent message already
+  // points at a specific category — the category detail / sales offer that
+  // follows is enough, the catalog would just be noise.
+  const intentSkipsCatalog =
+    CATEGORY_DETAIL_INTENTS.has(resolvedIntent)
+    || V2_INTENTS.has(resolvedIntent)
+    || resolvedIntent === 'custom_video_request';
+
   const appendCatalog = shouldAppendCatalog(priorMessageCount, lastInteraction)
     && !hasMedia
     && resolvedIntent !== 'payment_method_selection'
-    && resolvedIntent !== 'payment_confirmation';
+    && resolvedIntent !== 'payment_confirmation'
+    && !intentSkipsCatalog;
 
   if (appendCatalog) {
     // Case 1 / 2: Returning client after >7 days → full catalog

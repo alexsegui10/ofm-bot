@@ -171,13 +171,18 @@ describe('handleMessage — E2E pipeline (mocked LLMs)', () => {
     expect(typeof result.fragments[0]).toBe('string');
   });
 
-  it('new client (0 history) — appends catalog via getCatalogText, NOT runSales', async () => {
-    mockLLMs('sale_intent_photos', 'uy bebe tengo de todo');
+  it('new client (0 history) with direct sale intent — appends category detail (NOT full catalog), NOT runSales', async () => {
+    // FIX 4: when the first message is already a category-specific request
+    // (e.g. "quiero fotos"), the orchestrator must NOT force the full catalog
+    // — the category detail that follows is enough. Persona is allowed to add
+    // a brief "hola bebe!" prefix via the new-client instruction hint.
+    mockLLMs('sale_intent_photos', 'hola bebe! uy te tengo todo');
     const result = await handleMessage({ text: 'quiero fotos', chatId: CHAT_ID, businessConnectionId: CONN_ID, fromId: 42 });
     expect(runSales).not.toHaveBeenCalled();
-    expect(getCatalogText).toHaveBeenCalled();
+    expect(getCategoryDetail).toHaveBeenCalledWith('photos', expect.any(Array), undefined, 'quiero fotos');
+    expect(getCatalogText).not.toHaveBeenCalled();
     expect(result.intent).toBe('sale_intent_photos');
-    // fragments = persona + catalog
+    // fragments = persona + category detail
     expect(result.fragments.length).toBeGreaterThanOrEqual(2);
   });
 
