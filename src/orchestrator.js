@@ -23,6 +23,12 @@ import {
   getPendingProduct,
   clearPendingProduct,
 } from './lib/pending-product.js';
+import {
+  startSextingV2ForClient,
+  getActiveV2SessionForClient,
+  detectRoleplayFromHistory,
+} from './lib/sexting-bridge.js';
+import { handleClientTurn } from './lib/sexting-conductor.js';
 
 const log = agentLogger('orchestrator');
 
@@ -151,6 +157,38 @@ async function getMediaTags(mediaType) {
   } catch {
     return [];
   }
+}
+
+/**
+ * Build the internal Persona instruction for an active sexting v2 turn.
+ * Uses phase + clientState + roleplay from `handleClientTurn` to steer tone
+ * without leaking the engine internals to the client.
+ */
+function buildSextingV2Instruction(turn) {
+  const phaseTone = {
+    warm_up:   'Estás empezando: tono coqueto y suave, como entrando en calor.',
+    teasing:   'Vas subiendo: provocadora, juega con lo que viene.',
+    escalada:  'Vas a tope: explícita, directa, sin frenos.',
+    climax:    'Es el momento clímax: muy intensa, breve, en caliente.',
+    cool_down: 'Estás bajando: tierna, satisfecha, despídete con cariño sin cortar.',
+  };
+  const stateTone = {
+    engaged:  '',
+    rushed:   'El cliente quiere ir más rápido: condensa, no te enrolles.',
+    cold:     'El cliente está frío: re-engancha, sé más provocadora.',
+    finished: 'El cliente ya acabó: tierna y breve, despide la sesión.',
+  };
+  const roleplayLine = turn.roleplay
+    ? `Mantén el rol "${turn.roleplay}" sin romperlo en ningún momento.`
+    : '';
+  const lines = [
+    'ESTÁS EN MEDIO DE UNA SESIÓN DE SEXTING activa. Responde en personaje, breve (1-2 frases), sin presentarte ni saludar como si fuera el primer mensaje.',
+    phaseTone[turn.phase] || phaseTone.warm_up,
+    stateTone[turn.clientState] || '',
+    roleplayLine,
+    'NUNCA menciones precios, catálogo, fotos extra, ni preguntes "qué quieres" — eso ya está hablado.',
+  ].filter(Boolean);
+  return lines.join(' ');
 }
 
 // v2 intents routed through the products.json catalog (resolved via content-dispatcher).
@@ -298,6 +336,36 @@ export async function handleMessage({
   // ── 1. Get / create client ──────────────────────────────────────────────
   const client = await getOrCreateClient(chatId, businessConnectionId, from ?? { id: fromId });
 
+  // ── 1b. Active v2 sexting session short-circuit (FIX 3 — T5) ────────────
+  // Si el cliente tiene una sesión v2 activa (sexting_sessions_state.ended_at
+  // IS NULL), el mensaje entra al motor v2 (`handleClientTurn`) y se genera
+  // texto via Persona con phase + roleplay. NO entra en el pipeline normal
+  // (router/sales/catalog) — eso rompería la inmersión de la sesión.
+  if (text) {
+    const activeV2 = await getActiveV2SessionForClient(client.id).catch((err) => {
+      log.warn({ err, client_id: client.id }, 'getActiveV2SessionForClient failed (non-fatal)');
+      return null;
+    });
+    if (activeV2) {
+      const turn = await handleClientTurn({ sessionId: activeV2.session_id, clientMessage: text });
+      await saveMessage(client.id, 'user', text);
+
+      const personaInstruction = buildSextingV2Instruction(turn);
+      const personaText = await runPersona(text, [], client, 'sexting_active', personaInstruction);
+      const qg = await runQualityGate(personaText, client, 'sexting_active');
+      const finalText = qg.ok ? personaText : (qg.safeResponse || 'mmm sigue bebe 😈');
+      await saveMessage(client.id, 'assistant', finalText, 'sexting_active');
+
+      const cfg = getPacerConfig();
+      const fragments = fragmentMessage(finalText, cfg);
+      log.info({
+        chat_id: chatId, session_id: activeV2.session_id, action: turn.action,
+        phase: turn.phase, latency_ms: Date.now() - start,
+      }, 'pipeline complete (sexting v2 active turn)');
+      return { fragments, intent: 'sexting_active', sextingTurn: turn };
+    }
+  }
+
   // ── 2. Fetch history ────────────────────────────────────────────────────
   const rawHistory = await getHistory(client.id, 10);
   const history = normalizeHistory(rawHistory);
@@ -380,6 +448,10 @@ export async function handleMessage({
 
   // ── 6a. Bizum confirmation short-circuit ────────────────────────────────
   if (intent === 'payment_confirmation') {
+    // FIX 3 (T3): peek at the pending product BEFORE clearing — if it is a
+    // sexting template (st_*), the v2 conductor takes over from here.
+    const pendingForSexting = await getPendingProduct(client.id).catch(() => null);
+
     const bizumMsg = await confirmBizumByClient(
       client.id, chatId, businessConnectionId, updatedClient ?? client,
     );
@@ -391,9 +463,38 @@ export async function handleMessage({
       } catch (err) {
         log.warn({ err, client_id: client.id }, 'clearPendingProduct after bizum failed (non-fatal)');
       }
+
+      // FIX 3 (T3): if the pending product was a sexting template, start the
+      // v2 engine right after confirming the bizum claim. The session message
+      // is appended to the bizum ack so the client sees both in the same turn.
+      let extraFragments = [];
+      if (pendingForSexting && typeof pendingForSexting.productId === 'string'
+          && pendingForSexting.productId.startsWith('st_')) {
+        try {
+          const roleplay = detectRoleplayFromHistory(history, savedText);
+          await startSextingV2ForClient({
+            clientId: client.id,
+            templateId: pendingForSexting.productId,
+            roleplayContext: roleplay,
+          });
+          const kickoff = roleplay
+            ? `vamos allá bebe, soy tu ${roleplay} 😈`
+            : 'vamos allá bebe 🔥';
+          await saveMessage(client.id, 'assistant', kickoff, 'sexting_active');
+          extraFragments = fragmentMessage(kickoff, getPacerConfig());
+          log.info({
+            client_id: client.id, template_id: pendingForSexting.productId, roleplay,
+          }, 'sexting v2: started after payment_confirmation');
+        } catch (err) {
+          log.error({
+            err, client_id: client.id, template_id: pendingForSexting.productId,
+          }, 'sexting v2: start failed — falling back to bizum-only ack');
+        }
+      }
+
       await saveMessage(client.id, 'assistant', bizumMsg, intent);
       const cfg = getPacerConfig();
-      const frags = fragmentMessage(bizumMsg, cfg);
+      const frags = [...fragmentMessage(bizumMsg, cfg), ...extraFragments];
       log.info({ chat_id: chatId, intent, fragments: frags.length, latency_ms: Date.now() - start }, 'pipeline complete (bizum)');
       return { fragments: frags, intent };
     }
