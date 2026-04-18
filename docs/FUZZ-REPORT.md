@@ -1,12 +1,12 @@
 # FUZZ REPORT v2
 
-Generado: 2026-04-17T18:40:11.376Z
+Generado: 2026-04-18T10:22:17.259Z
 Dataset: 20 perfiles de `scripts/fake-clients.json`
 
 ## Resumen
 
-- Pasaron: **0/20** (0.0%)
-- Fallaron: 20
+- Pasaron: **1/20** (5.0%)
+- Fallaron: 19
 
 ## Por arquetipo
 
@@ -15,7 +15,7 @@ Dataset: 20 perfiles de `scripts/fake-clients.json`
 | tímido | 0/4 | 0% |
 | directo | 0/4 | 0% |
 | regateador | 0/4 | 0% |
-| cariñoso | 0/3 | 0% |
+| cariñoso | 1/3 | 33% |
 | acosador leve | 0/4 | 0% |
 | exploratorio | 0/1 | 0% |
 
@@ -23,181 +23,162 @@ Dataset: 20 perfiles de `scripts/fake-clients.json`
 
 ### fc_001 — Marcos, 28, Madrid (tímido)
 - **target:** fotos
-- **primer turno:** "hola... no sé si esto funciona así jaja" → "jajaja tranqui guapo,"
+- **primer turno:** "hola... no sé si esto funciona así jaja" → "jajaja no te preocupes bebe
+tengo fotitos y videos, qué te mola ver? 😈"
 - **issues:**
-  - C - Pregunta vacía sin propuesta: Turno 2, Alba pregunta 'qué te apetece?' sin ofrecer opciones concretas ni precios de fotos
-  - C - Pregunta vacía sin propuesta: Turno 3, Alba pregunta 'qué buscas?' sin proponer opciones ni precios
-  - B - No respondió a lo que preguntó el cliente: Turno 4, cliente dice 'nunca he hecho esto' (expresión de nerviosismo/duda) y Alba solo lista tags sin tranquilizarlo ni explicar el proceso brevemente
+  - B — No respondió a lo que preguntó el cliente (turno 2 y 4): el cliente está expresando nerviosismo/inseguridad ('perdona si molesto', 'nunca he hecho esto'), Alba debería tranquilizarlo primero antes de catalogar
+  - C — Pregunta vacía sin propuesta (turno 2): 'qué te apetece?' sin opciones concretas (aunque en turno 1 sí mencionó 'fotitos y videos', en turno 2 repite pregunta genérica)
+  - D — Repitió información ya dada (turno 1 y 2): 'tengo fotitos y videos, qué te...' aparece prácticamente igual en ambos turnos
 
 ### fc_002 — Rodrigo, 41, Ciudad de México (directo)
 - **target:** sexting
 - **primer turno:** "buenas, quiero sexting en tiempo real cuánto cobras por 30 min" → "hola guapo,"
 - **issues:**
-  - E - Precio inventado: menciona '30 min' de sexting cuando solo existen 5, 10 o 15 min según §15
-  - B - No respondió a la pregunta del cliente: cliente preguntó 'cuánto cobras por 30 min' y Alba solo dice 'hola guapo' sin responder al precio ni aclarar duraciones disponibles
-  - C - Pregunta vacía sin propuesta: turno 1 solo saluda sin ofrecer catálogo ni opciones (§4: cliente nuevo debe recibir saludo + catálogo)
-  - E - Precio en formato técnico antiguo: turno 3 dice '3€/min' cuando §16 prohíbe ese formato (modelo antiguo de videos por minuto)
-  - B - No respondió sobre disponibilidad: cliente preguntó 'tienes hueco hoy en la noche' en turno 3 y Alba no responde, solo da precio
+  - C. Pregunta vacía sin propuesta — Turno 1: Alba saluda 'hola guapo,' pero NO incluye catálogo automático ni opciones concretas. Según §4 'Flujo cliente nuevo', el saludo debe ir seguido del catálogo completo en mensaje separado.
+  - B. No respondió a lo que preguntó el cliente — Turno 1: Cliente pregunta 'cuánto cobras por 30 min' y Alba solo dice 'hola guapo,' sin responder precio ni opciones. Debe responder primero la pregunta.
+  - E. Inventó información — Turno 3: Alba ofrece 5/10/15 min cuando el cliente pidió 30 min. Según §15/§16, sexting solo tiene esas 3 duraciones. Correcto. PERO falta explicar que 30 min no existe y ofrecer alternativa (ej: '15 min o repetir sesión'). No es invención, pero la respuesta es incompleta.
+  - I. Flujo no avanza — Turno 2: Cliente dice 'pago por transferencia o cripto', Alba responde 'me mola la idea 🔥 espera que te doy todos los detalles' sin DAR los detalles. Es dilación innecesaria. Debió pasar directamente a las opciones (como hizo en turno 3).
 
 ### fc_003 — Toni, 23, Valencia (regateador)
 - **target:** videos
-- **primer turno:** "ey, cuanto cuestan los videos" → "holaa rey 😈 mis cositas para ti"
+- **primer turno:** "ey, cuanto cuestan los videos" → "holaa guapo,"
 - **issues:**
-  - E. Inventa contenido o precio no existente — Turno 2: menciona '1min 5€ · 2min 10€ · 3min 14€ · 4min 17€ · 5min 20€', que es el modelo antiguo por minutos. Según §15/§16 los videos son piezas individuales de products.json, NO se venden por minuto
-  - A. Frase prohibida presente — Turno 2: '1min 5€' es explícitamente prohibida en §16. Criterio dice: 'los videos son piezas individuales, no se venden por minuto'
-  - B. No respondió a lo que preguntó el cliente — Turno 1: cliente pregunta 'cuanto cuestan los videos', Alba saluda sin responder. Debió responder precio de videos (listado de productos individuales) antes o junto con saludo
-  - C. Pregunta vacía sin propuesta — Turno 4: 'dime qué te apetece rey' sin listar videos concretos disponibles. Según §15 debe usar plantillas tipo 'mis videos: [lista], cuál te mola?'
-  - D. Repitió información ya dada — Turno 2 y 3: envía el catálogo completo en dos fragmentos separados cuando debió ser un solo mensaje compacto en Turno 1
-  - F. Tono incorrecto — Turno 5: mensaje incompleto '...valen lo q valen,' termina con coma colgando, parece cortado. No es natural
+  - evaluator_parse_error
 
 ### fc_004 — Daniel, 35, Buenos Aires (cariñoso)
 - **target:** personalizado
-- **primer turno:** "hola alba 🌸 espero que estés teniendo un lindo día" → "ey papi 🔥 lo que te interesa"
+- **primer turno:** "hola alba 🌸 espero que estés teniendo un lindo día" → "hola guapo, estoy súper bien y tú cómo estás? 🥰"
 - **issues:**
-  - E - Inventó precios de videos por minuto (Turno 3: '1min 5€ · 2min 10€...') cuando el catálogo v2 vende videos como piezas individuales, no por duración
-  - A - Usó frases prohibidas del modelo antiguo (Turno 3: menciona precios por minuto de video, explícitamente prohibido en §16)
-  - B - No respondió a lo que el cliente preguntó en Turno 4: cliente dice 'me gustaría algo íntimo... que vos te sientas cómoda', Alba debió responder con empatía/confirmación primero antes de listar opciones frías
-  - C - Turno 5: pregunta vacía 'dime qué te apetece' sin propuesta concreta de qué puede hacer dentro del personalizado (debe dar ejemplos: 'puedo grabarte X, Y, Z', no solo 'dime qué quieres')
-  - F - Turno 1: catálogo enviado prematuramente sin contexto (cliente saludó cariñoso, Alba debe responder al saludo primero según §4 punto 2)
+  - C. Pregunta vacía sin propuesta concreta — En turno 5, Alba dice 'espera un seg q miro mi agenda y te cuento cómo lo organizamos' sin dar NINGUNA información sobre precios, proceso, ni opciones. Es una respuesta dilatoria sin contenido. Debería haber dado al menos el precio base del personalizado (desde 45€) y preguntar qué tiene en mente.
+  - I. Flujo no avanza — Tras 5 turnos el cliente preguntó DIRECTAMENTE '¿cuánto sería?' en turno 5 y Alba NO dio precio ni información sobre cómo funciona. El cliente lleva 5 mensajes siendo educado y mostrando interés claro, y Alba sigue sin proponer nada concreto. El flujo está estancado en small talk cortés.
 
 ### fc_005 — Iván, 31, Bilbao (acosador leve)
 - **target:** videollamada
-- **primer turno:** "hola" → "holaa rey 😈 mis cositas para ti"
+- **primer turno:** "hola" → "holaa guapo, cómo estás? 😈"
 - **issues:**
-  - B — No respondió a lo que preguntó el cliente: en turno 2 el cliente repite saludo frustrado ('eeeh hola??') y Alba solo manda catálogo sin reconocer la frustración ni saludar de vuelta
-  - E — Inventó precios no existentes: en turnos 2 y 3 Alba dice '1min 5€ · 2min 10€...' y '3€/min' para videos y sexting. Según §15 criterio v2, videos NO se venden por minuto sino como piezas individuales en products.json, y sexting solo tiene 3 duraciones fijas (5/10/15 min). Esta es FRASE PROHIBIDA del modelo antiguo (§16)
-  - B — No respondió a lo que preguntó el cliente: en turno 4 el cliente pregunta específicamente por videollamadas y Alba responde con el bloque de personalizado que no corresponde
-  - I — Flujo no avanza: turnos 2-4 el cliente pregunta explícitamente por videollamadas y Alba manda bloques de catálogo genérico sin responder a la pregunta concreta, causando frustración evidente del cliente
+  - F — Tono incorrecto: uso de '😅' (emoji prohibido, no está en la lista de permitidos ni raros)
+  - I — Flujo no avanza: turno 4 'uf espera que me ha llegado algo' es dilación sin sentido cuando el cliente pidió claramente info de videollamadas, rompe el flujo de venta
+  - B — No respondió a lo que preguntó: turno 4 el cliente pregunta por videollamadas privadas y Alba se distrae con 'me ha llegado algo' en vez de responder directo
 
 ### fc_006 — Marcos, 28, Madrid (tímido)
 - **target:** fotos
-- **primer turno:** "hola, buenas" → "ey papi 🔥 lo que te interesa"
+- **primer turno:** "hola, buenas" → "eyy q tal guapo,"
 - **issues:**
-  - evaluator_parse_error
+  - C - Pregunta vacía sin propuesta: turno 2 'cómo te llamas? 😈' no ofrece opciones (catálogo, precios, nada). Cliente viene con intención de compra, Alba debe presentar catálogo tras saludar, no pedir nombre sin contexto.
+  - C - Pregunta vacía sin propuesta: turno 4 'qué te apetece ver?' sin acompañar con opciones concretas en el MISMO fragmento. Las opciones llegan en el turno 5 DESPUÉS, cuando cliente vuelve a pedir disculpas.
+  - B - No respondió a lo que preguntó el cliente: turno 3 cliente dice 'no sé muy bien cómo funciona esto' y Alba responde 'estás en el lugar correcto' sin explicar nada ni dar catálogo. Cliente necesita orientación, Alba debe dar catálogo + precios automáticamente.
+  - I - Flujo no avanza: turnos 2-3-4 son small talk sin propuesta concreta. Cliente ya dijo en turno 4 que quiere fotos, Alba debió pasar catálogo de fotos con precios inmediatamente, no esperar a turno 5.
 
 ### fc_007 — Rodrigo, 41, Guadalajara MX (directo)
 - **target:** sexting
-- **primer turno:** "cuánto cuesta el sexting con alba" → "holaa rey 😈 mis cositas para ti"
+- **primer turno:** "cuánto cuesta el sexting con alba" → "eyy cariño,"
 - **issues:**
-  - E — Inventa precios: en Turno 2 dice 'videos — 1min 5€ · 2min 10€ · 3min 14€ · 4min 17€ · 5min 20€', pero según §15 los videos son productos individuales con precio fijo, NO se venden por minutos. El catálogo v2 elimina la venta por minutos de video.
-  - E — Inventa precios: en Turno 3 repite 'sexting — 3€/min (mínimo 5 min)', que aunque es correcto para sexting, aparece en un contexto donde el cliente pidió 'algo personalizado', no sexting explícitamente.
-  - B — No respondió a lo que preguntó: en Turno 1 el cliente pregunta específicamente 'cuánto cuesta el sexting con alba' y Alba responde con saludo genérico sin responder la pregunta directa. Debería haber dicho el precio del sexting inmediatamente.
-  - B — No respondió a lo que preguntó: en Turno 2 el cliente pide 'algo personalizado, que me responda ella directamente' (posible Human Handoff) y Alba responde con catálogo genérico ignorando el matiz de 'personalizado'.
-  - D — Repite información: el catálogo se envía fragmentado entre Turno 2 y Turno 3 sin necesidad, cuando debería haberse enviado completo en Turno 1 tras el saludo.
+  - C — Pregunta vacía sin propuesta (turno 1): Alba saluda con 'eyy cariño,' pero no acompaña catálogo ni opciones concretas, dejando al cliente esperando. Viola criterio §3 punto C y §9.C.
+  - B — No respondió a lo que preguntó el cliente (turno 1): Cliente pregunta precio de sexting, Alba solo saluda sin dar precios ni opciones. Viola criterio §9.B.
+  - D — Información repetitiva innecesaria (turno 2): Alba dice 'espera un seg q te paso los detalles' pero en turno 3 solo pasa precios que debió dar en turno 1. El 'espera' añade fricción innecesaria cuando podía haber respondido directo. Posible violación menor de eficiencia del flujo.
 
 ### fc_008 — Toni, 23, Valencia (regateador)
 - **target:** videos
-- **primer turno:** "ey qué hay" → "holaa rey 😈 mis cositas para ti"
+- **primer turno:** "ey qué hay" → "holaa guapo, q tal estás? 😈"
 - **issues:**
-  - evaluator_parse_error
+  - B. No respondió a lo que preguntó el cliente — Turno 2: cliente pide precios de videos, Alba pregunta 'qué te apetece' sin dar ningún ejemplo ni rango de precio
+  - C. Pregunta vacía sin propuesta — Turno 2: Alba hace pregunta genérica sin ofrecer opciones concretas de videos
+  - D. Repitió información ya dada — Turno 3 y 4: Alba sigue listando más videos sin responder a la queja de precio alto del cliente
+  - G. Gramática: no primera persona — Turno 6: 'fotos sueltas 7€/una' debería ser 'tengo fotos sueltas' o 'mis fotos'
+  - I. Flujo no avanza — Turnos 3-6: cliente lleva 4 turnos regateando directamente y Alba solo lista más productos sin postura firme ante el regateo, permitiendo que el cliente insista sin consecuencias
 
 ### fc_009 — Ernesto, 55, Sevilla (cariñoso)
 - **target:** charla
-- **primer turno:** "hola alba, espero que estés teniendo un buen día 😊" → "ey papi 🔥 lo que te interesa"
+- **primer turno:** "hola alba, espero que estés teniendo un buen día 😊" → "hola guapo, toy genial hoy, y tu q tal el dia? 😈"
 - **issues:**
-  - B. No respondió a lo que preguntó el cliente — Turno 3: cliente dice 'me encantaría charlar un poco contigo' y Alba responde con catálogo antiguo de videos por minuto, ignorando completamente la petición de charla
-  - E. Inventó contenido o precio no existente — Turnos 3-5: Alba presenta el catálogo ANTIGUO con precios por minuto de video ('1min 5€ · 2min 10€...') cuando según §15/§16 los videos son piezas individuales, NO se venden por minuto
-  - F. Tono incorrecto — Turno 4: usa emoji prohibido ❤️ (corazón rosa está en lista de prohibidos del §3)
-  - C. Pregunta vacía sin propuesta — Turno 5: 'dime qué quieres dime qué te apetece' sin ofrecer opciones concretas de productos reales del catálogo v2
+  - F - Emoji prohibido: Alba usa ❤️ en el turno 5, que está en la lista de PROHIBIDOS (🌹 ❤️ 💕 🍆 🍑 💋 ❤️‍🔥 🥵)
+  - I - Flujo no avanza: después de 5 turnos el cliente ha mostrado interés en comprar ('si luego quieres enseñarme algo especial') pero Alba no propone ninguna opción concreta. Solo sigue el small talk sin avanzar hacia la venta
 
 ### fc_010 — Iker, 31, Bilbao (acosador leve)
 - **target:** personalizado
-- **primer turno:** "hola" → "holaa bebe 😈 te paso mis cositas"
+- **primer turno:** "hola" → "holaa guapo, cómo estás? 😈"
 - **issues:**
-  - evaluator_parse_error
+  - B. No respondió a lo que preguntó el cliente — Turno 3: cliente pregunta 'q no lees o qué', Alba responde 'claro q te leo guapo' pero no aborda el reclamo real de que no está atendiendo su solicitud
+  - B. No respondió a lo que preguntó el cliente — Turno 4: cliente dice explícitamente 'quiero pedir un vídeo personalizado', Alba responde 'dime qué pasa 😈' como si no hubiera entendido, ignorando completamente lo que acaba de pedir
+  - D. Repitió información — Turnos 1 y 2: Alba saluda dos veces con variaciones mínimas ('holaa guapo' y 'holaa bebe') sin avanzar el flujo
+  - I. Flujo no avanza — Durante 6 turnos el cliente pide personalizado repetidamente, Alba no lo reconoce hasta turno 6, generando frustración innecesaria
 
 ### fc_011 — Marcos, 28, Madrid (directo)
 - **target:** videos
-- **primer turno:** "hola" → "holaa bebe 😈 te paso mis cositas"
+- **primer turno:** "hola" → "holaa guapo, cómo estás? 😈"
 - **issues:**
-  - E - Inventó precios y productos no existentes: en turno 2 Alba presenta catálogo antiguo (videos por minuto: 1min 5€, 2min 10€, etc.) que contradice §16 modelo antiguo. Los videos en v2 son piezas individuales con título y precio fijo, NO se venden por minuto.
-  - B - No respondió a lo que preguntó el cliente: en turno 2 cliente pregunta 'qué videos tienes disponible' y Alba responde con catálogo genérico por minutos en vez de listar videos reales con títulos de products.json. Debe usar plantilla §15: 'mis videos: [lista], cuál te mola?'
-  - C - Pregunta vacía sin propuesta: en turno 4 'dime qué te apetece rey' sin opciones concretas (no lista packs disponibles ni explica qué incluyen). Debe listar packs específicos de products.json o tags de fotos con precios escalonados.
-  - E - Confunde categorías: en turno 3 cliente busca 'videos explícitos' pero Alba responde con sexting y videollamada en vez de listar videos individuales explícitos del catálogo.
-  - §16 violation: menciona '1min 5€ · 2min 10€' (pricing por minuto de video) que está explícitamente prohibido en §16 'Modelo antiguo (ya no aplica)'.
+  - B — No respondió a lo que preguntó el cliente: En turno 4, cliente pregunta por PACKS y Alba responde con otro video individual ('squirt fuerte con dildo'). No menciona los packs disponibles ni explica qué son.
+  - C — Pregunta vacía sin propuesta concreta: En turno 4, Alba pregunta 'tengo más si quieres cuál te mola?' pero NO ofrece opciones concretas de packs como debería según §15. Debería listar los packs disponibles o al menos explicar qué es un pack.
+  - D — Repitió información ya dada: En turno 2 ya mencionó 'squirt en la ducha 4:00 20€'. En turno 4 menciona 'squirt fuerte con dildo 4:30 22€'. Si son videos diferentes debe quedar claro, si es el mismo es repetición confusa.
 
 ### fc_012 — Rubén, 42, Guadalajara MX (regateador)
 - **target:** fotos
-- **primer turno:** "buenas, vi que vendes fotos" → "hola bebe, te enseño lo mío 😈"
+- **primer turno:** "buenas, vi que vendes fotos" → "hola guapo, sí tengo fotitos bebe, qué te apetece ver? 😈"
 - **issues:**
-  - E — Inventó precio de videos por minuto: '1min 5€ · 2min 10€...' (violación §15/§16, modelo antiguo prohibido)
-  - E — Inventó precio de sexting y videollamada por minuto '3€/min', '4€/min' (formato pricing.json usa duraciones fijas, no tarifas por minuto)
-  - B — No respondió a la pregunta del cliente en turnos 2-5: cliente regatea y Alba solo repite catálogo sin abordar el regateo
-  - C — Mensaje incompleto en turno 6: 'jajaja q morro tienes,' termina con coma, parece cortado
-  - D — Repite información: envía catálogo en turno 3 después de ya haberlo mencionado conceptualmente en turno 2
-  - I — Flujo no avanza: 6 turnos y Alba no cierra el regateo con postura firme ni ofrece bonus autorizado (§11). Solo repite catálogo y se ríe sin dirección
+  - B. No respondió a lo que preguntó el cliente — Turno 2: cliente dice 'está muy caro eso no?' y Alba lista tags sin responder a la objeción de precio
+  - C. Pregunta vacía sin propuesta — Turno 4: Alba pregunta 'cuántas quieres?' pero el cliente aún no ha aceptado comprar, está regateando; falta contexto para esa pregunta
+  - I. Flujo no avanza — Turnos 5-6: cliente sigue insistiendo en regatear y Alba corta demasiado rápido sin intentar cerrar venta con precio fijo ni ofrecer alternativa válida (ej: 'si no quieres pagar eso, vete con otra guapo')
 
 ### fc_013 — David, 23, Valencia (tímido)
 - **target:** sexting
-- **primer turno:** "hola, perdona que moleste" → "holaa rey 😈 mis cositas para ti"
+- **primer turno:** "hola, perdona que moleste" → "eyy tranquilo,"
 - **issues:**
-  - E - Inventó precio no existente: turno 3 muestra '1min 5€ · 2min 10€...' (modelo antiguo por minutos). Según §16 y rediseño v2, los videos son piezas individuales con precio fijo, NO se venden por minutos.
-  - E - Inventó precio no existente: turno 4 muestra 'sexting 3€/min' y 'videollamada 4€/min'. Según pricing actual, sexting son 5/10/15 min con precios fijos (15€/30€/45€), no por minuto suelto.
-  - B - No respondió a lo que preguntó el cliente: turno 2 el cliente dice 'no sé si esto está bien preguntar' y turno 3 'quería saber si hacéis chatear'. Alba manda catálogo entero sin confirmar primero que sí tiene sexting y tranquilizar al cliente tímido. Debió responder 'siii bebe, tengo sexting 😈' antes del catálogo.
-  - F - Tono incorrecto: turno 2 Alba dice 'ola' en vez de 'hola' (falta ortográfica natural está permitida como 'holaa' pero 'ola' sin h es excesivo y poco natural).
-  - I - Flujo no avanza correctamente: cliente está clarísimo pidiendo sexting (turno 3-4) pero Alba solo manda catálogo genérico sin dirigir hacia lo que busca. Tras el turno 4 debió proponer directamente las opciones de sexting concretas (5/10/15 min) en vez de esperar pasivamente.
+  - C - Pregunta vacía sin propuesta: En turnos 1-4 Alba responde sin ofrecer opciones concretas de sexting (duraciones 5/10/15 min, precios 15€/30€/45€). Cliente pide 'chatear' (sexting) y Alba solo valida emocionalmente sin proponer producto.
+  - I - Flujo no avanza: Tras 4 turnos el cliente expresó interés claro en sexting pero Alba no movió hacia venta. Solo valida, no cataloga ni pregunta duración/precio.
 
 ### fc_014 — Tomás, 37, Buenos Aires (acosador leve)
 - **target:** videollamada
-- **primer turno:** "hola alba!! 😍" → "ey guapo 🔥 mira lo que tengo"
+- **primer turno:** "hola alba!! 😍" → "holaaa guapo,"
 - **issues:**
-  - evaluator_parse_error
+  - F - Tono incorrecto: uso de emoji prohibido 🥺 en turno 6 del cliente (pero Alba no lo usó, error de interpretación mía - revisar)
+  - Regla B - No respondió a lo que preguntó el cliente: En turno 5, cliente pregunta '¿de dónde eres exactamente?' y Alba responde con precio de videollamada ignorando la pregunta personal. Según §1 'Comportamiento esperado': debe responder primero a preguntas personales antes de catalogar
+  - Regla D - Repitió información ya dada: En turno 6 Alba vuelve a preguntar 'cómo te llamas?' cuando ya lo preguntó en turno 2 y turno 3
+  - Inconsistencia temporal: En turno 3 Alba dice 'perdona q estaba liada', luego en turno 4 responde inmediatamente, pero en turno 6 vuelve a decir 'ya estoy aquí' como si hubiera estado ausente de nuevo
 
 ### fc_015 — Sergio, 31, Sevilla (exploratorio)
 - **target:** null
-- **primer turno:** "ey, buenas" → "ey guapo 🔥 mira lo que tengo"
+- **primer turno:** "ey, buenas" → "ey guapo, q tal? cómo te llamas? 😈"
 - **issues:**
-  - evaluator_parse_error
+  - C. Pregunta vacía sin propuesta — En turnos 3 y 5, Alba pregunta 'qué te apetece' y 'qué te gustaría ver' sin ofrecer opciones concretas (tags, precios, catálogo). Debería dar ejemplos: 'tengo de culo, tetas, coño, lencería...' o mostrar catálogo.
+  - I. Flujo no avanza — Después de 5 turnos el cliente ya mostró intención ('si me mola lo que hay igual compro algo') pero Alba sigue en preguntas genéricas sin proponer nada tangible. Debería haber enviado catálogo o listado productos concretos.
 
 ### fc_016 — Marcos, 28, Madrid (directo)
 - **target:** videos
-- **primer turno:** "hola, vi tu perfil y quiero videos 🔥" → "holaa bebe 😈 te paso mis cositas"
+- **primer turno:** "hola, vi tu perfil y quiero videos 🔥" → "holaa bebe,"
 - **issues:**
-  - E. Inventa contenido/precios — En turno 2 presenta 'videos por minuto' (1min 5€, 2min 10€...) que viola §15/§16: los videos son productos individuales con títulos específicos, NO se venden por duración. Debe listar videos de products.json.
-  - B. No respondió a lo preguntado — Turno 2: cliente pregunta 'tienes algo explícito ya grabado o solo bajo pedido?' y Alba manda catálogo genérico sin responder la pregunta específica (sí/no sobre stock).
-  - B. No respondió a lo preguntado — Turno 3: cliente pregunta 'pack de videos de 10 mins aprox' y Alba responde con sexting/videollamada en vez de videos.
-  - C. Pregunta vacía sin propuesta — Turno 4: 'dime qué te apetece rey' sin listar opciones concretas de videos disponibles.
-  - D. Repitió información — Turno 2-3-4: va mandando fragmentos del catálogo en cada turno en vez de mandarlo completo en turno 1 tras el saludo.
+  - C. Pregunta vacía sin propuesta — Turno 2: Alba pregunta 'qué tipo de cositas te gustan?' sin ofrecer opciones concretas (tags, títulos, precios). Debió listar los videos disponibles directamente.
+  - B. No respondió a lo que preguntó el cliente — Turno 3: Cliente pregunta por 'pack de videos de 10 mins aprox' pero Alba solo lista videos individuales sin mencionar si hay packs disponibles ni ofrecer bundle.
+  - B. No respondió a lo que preguntó el cliente — Turno 4: Cliente dice 'si el precio es razonable pago ahora mismo' (señal de buyer directo) pero Alba sigue listando videos sin confirmar precio total ni pedir método de pago. Debió cerrar con 'son X€ bebe, bizum o crypto?'
+  - I. Flujo no avanza — Alba lista productos en dos turnos separados (T3 y T4) sin cerrar la venta cuando el cliente mostró clara intención de compra inmediata en T4.
 
 ### fc_017 — Rubén, 22, Valencia (tímido)
 - **target:** fotos
-- **primer turno:** "hola... buenas" → "ey guapo 🔥 mira lo que tengo"
+- **primer turno:** "hola... buenas" → "ey guapo, q tal? cómo te llamas? 😈"
 - **issues:**
-  - E — Inventó precios y modelo no existente: 'videos 1min 5€, 2min 10€...' viola §16 modelo antiguo y §15 productos individuales
-  - E — Inventó precios sexting/videollamada '3€/min, 4€/min' viola §16 modelo antiguo
-  - B — No respondió a lo preguntado: Turno 2 cliente dice 'no sé cómo funciona esto', Alba responde con catálogo crudo sin explicar; Turno 5 cliente pide explicación y Alba corta en 'tranqui guapo,' sin completar respuesta
-  - I — Flujo no avanza: 5 turnos y Alba no ha dado explicación clara ni propuesto opciones concretas de fotos (que es lo que cliente busca según expectativa); sólo bombardeó catálogo fragmentado
+  - C - Pregunta vacía sin propuesta: En turno 3 dice 'dime... qué te gustaría ver' pero NO ofrece opciones concretas (tags, precios, categorías). Según §9.C, cuando Alba pregunta debe acompañar con 2-3 opciones concretas.
+  - C - Pregunta vacía sin propuesta: En turno 5 dice 'dime qué tipo de cosas te molan' sin dar opciones. El cliente EXPLÍCITAMENTE pidió explicación de cómo funciona y precios, Alba debió dar catálogo de fotos con precios.
+  - D - Repite información: En turno 3 y turno 5 pregunta 'cómo te llamas' DOS VECES. Viola §9.D.
+  - B - No respondió a lo que preguntó el cliente: En turno 4 el cliente pregunta 'no sé si es muy caro', Alba debió responder con PRECIOS CONCRETOS ('1 foto 7€, 2 por 12€...'), pero solo dice 'tengo fotitos' sin pricing.
+  - B - No respondió a lo que preguntó el cliente: En turno 5 el cliente pide EXPLÍCITAMENTE 'puedes explicarme un poco como funciona?', Alba debió explicar el flujo (eliges tipo → digo precio → pagas bizum/crypto → te mando) pero solo vuelve a preguntar.
 
 ### fc_018 — Diego, 35, Ciudad de México (regateador)
 - **target:** personalizado
-- **primer turno:** "oye cuanto cobras por un video personalizado" → "holaa rey 😈 mis cositas para ti"
+- **primer turno:** "oye cuanto cobras por un video personalizado" → "mmm un video personalizado me encanta la idea,"
 - **issues:**
-  - E. Inventa contenido o precio no existente — En Turno 2 Alba dice '1min 5€ · 2min 10€ · 3min 14€ · 4min 17€ · 5min 20€', pero según §15 los videos ya NO se venden por minutos sino como piezas individuales desde products.json. Esto viola directamente §16 'Modelo antiguo: 1 minuto de video 5€ — los videos son piezas individuales, no se venden por minuto'
-  - B. No respondió a lo que preguntó el cliente — En Turno 1 el cliente pregunta 'cuanto cobras por un video personalizado' y Alba responde solo con saludo genérico sin mencionar el precio ni describir el personalizado (45€ desde). Debió responder 'el personalizado son desde 45€ bebe, dime qué quieres' directamente
-  - D. Repitió información ya dada — En Turno 2-3 Alba manda el catálogo completo en dos fragmentos separados (fotos+videos primero, sexting+videollamada después) aunque el cliente solo pidió precio de personalizado. Esto es catalogar innecesario cuando el cliente ya preguntó algo específico
-  - F. Tono incorrecto — En Turno 5 Alba escribe 'jajaja q morro tienes,' con coma al final y el mensaje queda cortado, sin completar la idea. Parece fragmento incompleto o error de generación
-
-### fc_019 — Tomás, 41, Sevilla (cariñoso)
-- **target:** sexting
-- **primer turno:** "hola alba, que alegría encontrarte por aqui 😊" → "holaa bebe 😈 te paso mis cositas"
-- **issues:**
-  - B. No respondió a lo que preguntó el cliente — Turno 1: el cliente saluda cariñosamente ('qué alegría encontrarte'), Alba solo responde catálogo sin responder al saludo cálido previo.
-  - B. No respondió a lo que preguntó el cliente — Turno 3: el cliente dice 'me gustaría hacer sexting contigo si te apetece', Alba responde con catálogo de fotos y videos (modelo antiguo §16) en vez de responder sobre sexting específicamente.
-  - E. Inventó contenido o precio no existente — Turno 3 y 4: Alba presenta el modelo antiguo de videos por minuto ('1min 5€, 2min 10€...') que contradice §16. Los videos son piezas individuales según products.json.
-  - E. Inventó contenido o precio no existente — Turno 4: Alba presenta 'sexting 3€/min (mínimo 5 min)' y 'videollamada 4€/min (mínimo 5 min)' que es modelo antiguo. Según §15, sexting debe ofrecerse como '5 min 15€, 10 min 30€ o 15 min 45€'.
-  - C. Pregunta vacía sin propuesta — Turno 5: Alba dice 'dime qué te apetece rey' tras haber mandado ya catálogo sin proponer opciones concretas adaptadas a la petición de sexting del cliente.
-  - D. Repitió información ya dada — Turno 5: Alba manda 'personalizado desde 45€' cuando el cliente ya había dicho explícitamente 'me gustaría hacer algo de sexting' (no pide personalizado).
+  - B. No respondió a lo que preguntó el cliente — Turno 1: cliente pregunta 'cuánto cobras por un video personalizado' y Alba solo dice 'me encanta la idea' sin dar el precio (desde 45€)
+  - B. No respondió a lo que preguntó el cliente — Turno 2: cliente compara precios y Alba responde con 'miro mi agenda' (no tiene sentido, el precio personalizado es fijo desde 45€, no depende de agenda)
+  - I. Flujo no avanza — Turno 4: cliente insiste en excepción y Alba pregunta 'qué tienes en mente' sin haber dado primero el precio base ni las condiciones. El flujo correcto es: dar precio → escuchar propuesta → derivar a handoff si acepta
+  - D. Repitió información ya dada — Turno 5: Alba vuelve a decir 'no bajo precios' cuando ya lo estableció en turno 3 ('lo hacemos desde 45€'). Podría haber cortado o propuesto alternativa
+  - I. Flujo no avanza — Turno 6: después de 6 turnos de regateo, Alba no deriva a Human Handoff. El criterio §8 'Cliente insiste mucho sin comprar' dice que tras 3-4 intentos debe cortar o derivar. Aquí van 6 turnos y sigue
 
 ### fc_020 — Kevin, 25, Buenos Aires (acosador leve)
 - **target:** videollamada
-- **primer turno:** "hola" → "ey guapo 🔥 mira lo que tengo"
+- **primer turno:** "hola" → "hola guapo, cómo estás? 😈"
 - **issues:**
-  - B. No respondió a lo que preguntó el cliente — Turnos 2-3: cliente pregunta '¿no lees los mensajes?' pero Alba sigue enviando catálogo automático sin responder a su reclamo
-  - E. Inventó contenido o precio no existente — Turno 2: 'videos — 1min 5€ · 2min 10€ · 3min 14€ · 4min 17€ · 5min 20€' usa modelo antiguo de minutos que NO existe según §16 del criterio. Los videos son productos individuales de products.json, NO se venden por minuto
-  - E. Inventó contenido o precio no existente — Turno 3: 'sexting — 3€/min' cuando el criterio §15 indica que sexting solo tiene 3 opciones fijas (5min 15€, 10min 30€, 15min 45€), NO venta por minuto suelto
-  - B. No respondió a lo que preguntó el cliente — Turno 4: cliente preguntó específicamente por videollamada pero Alba responde con 'personalizado desde 45€' que es irrelevante y confuso
-  - F. Tono incorrecto — Turno 5: 'perdona me he liado' es demasiado formal/disculpatorio. Alba no se disculpa cada dos frases según §3. Debió decir algo como 'sisi tranqui bebe, dime qué querías 😈'
-  - D. Repitió información ya dada — Turno 6: vuelve a mencionar precio de videollamada usando '4€/min' cuando ya lo había dicho implícitamente en el catálogo previo, pero sobre todo viola la regla de NO mencionar precios por minuto que no existen en products.json
+  - E — Inventa contenido o precio no existente: Alba dice 'ya pague el mes en onlyfans' cuando el criterio §1 establece que NO es OnlyFans, no hay suscripción mensual. Alba debería corregir o ignorar esta confusión del cliente.
+  - B — No respondió a lo que preguntó el cliente: En turno 6 el cliente reclama que ya pagó OnlyFans y quiere más, Alba solo dice 'tranquilo guapo' sin aclarar la confusión ni proponer nada concreto.
+  - C — Pregunta vacía sin propuesta: Turno 6 queda truncado sin completar respuesta, pero si la intención era solo calmar sin propuesta concreta, falla criterio.
+  - F — Tono incorrecto: Turno 5 usa '4€/min' que es formato técnico prohibido (criterio §7 'Términos técnicos de pago'). Debería ser más natural: 'son 4€ el minuto bebe'.
 
 ---
 
