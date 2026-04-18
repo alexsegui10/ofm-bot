@@ -8,10 +8,11 @@ import {
   getPostServiceMessage,
   _resetPricingCache,
 } from './product-catalog.js';
+import { _resetProductsCache } from '../config/products.js';
 
-// Minimal injectable pricing config — mirrors the new structure
+// Minimal injectable LEGACY pricing config — only used by resolveProduct
+// (which still reads pricing.json) and the threshold getters.
 const MOCK_PRICING = {
-  catalogo_mensaje: '📸 fotos — 1 foto 7€ · 2 fotos 12€ · 3 fotos 15€\ndime qué te apetece rey 😈',
   fotos: {
     '1_foto':  { precio_eur: 7,  descripcion: '1 foto' },
     '2_fotos': { precio_eur: 12, descripcion: '2 fotos' },
@@ -44,11 +45,14 @@ const MOCK_PRICING = {
   limites_pago: { minimo_transaccion_eur: 3 },
 };
 
-beforeEach(() => _resetPricingCache());
+beforeEach(() => {
+  _resetPricingCache();
+  _resetProductsCache();
+});
 
-// ─── resolveProduct ───────────────────────────────────────────────────────────
+// ─── resolveProduct (LEGACY) ──────────────────────────────────────────────────
 
-describe('resolveProduct', () => {
+describe('resolveProduct (legacy)', () => {
   it('resolves sale_intent_photos → 1_foto (7€)', () => {
     const p = resolveProduct('sale_intent_photos', MOCK_PRICING);
     expect(p.amountEur).toBe(7);
@@ -127,73 +131,92 @@ describe('getMinTransaction', () => {
   });
 });
 
-// ─── getCatalogText ───────────────────────────────────────────────────────────
+// ─── getCatalogText (v2 — products.json) ──────────────────────────────────────
 
-describe('getCatalogText', () => {
-  it('returns the catalogo_mensaje string', () => {
-    const text = getCatalogText(MOCK_PRICING);
-    expect(typeof text).toBe('string');
-    expect(text).toContain('7€');
-  });
-
-  it('returns empty string when field is missing', () => {
-    expect(getCatalogText({})).toBe('');
-  });
-
-  it('uses real pricing.json when no config injected', () => {
+describe('getCatalogText (v2)', () => {
+  it('returns the v2 greeting catalog string', () => {
     const text = getCatalogText();
     expect(typeof text).toBe('string');
-    expect(text.length).toBeGreaterThan(10);
+    expect(text.length).toBeGreaterThan(20);
+  });
+
+  it('mentions all five top-level categories (fotos, videos, sexting, videollamada, personalizado)', () => {
+    const text = getCatalogText();
+    expect(text).toMatch(/fotos/i);
+    expect(text).toMatch(/videos/i);
+    expect(text).toMatch(/sexting/i);
+    expect(text).toMatch(/videollamada/i);
+    expect(text).toMatch(/personalizado/i);
+  });
+
+  it('does NOT use the legacy "X min Y€" video pricing format (§16)', () => {
+    const text = getCatalogText();
+    // Legacy strings: "1min 5€", "2min 10€", etc.
+    expect(text).not.toMatch(/\d\s*min\s*\d+€/i);
+  });
+
+  it('mentions sexting with the 5/10/15 fixed templates (§15)', () => {
+    const text = getCatalogText();
+    // generateGreetingCatalog formats as "sexting 5/10/15 min"
+    expect(text).toMatch(/5\/10\/15\s*min/i);
+  });
+
+  it('ignores any legacy `pricing` argument (backwards compat)', () => {
+    const text1 = getCatalogText();
+    const text2 = getCatalogText(MOCK_PRICING);
+    expect(text1).toBe(text2);
   });
 });
 
-// ─── getCategoryDetail ────────────────────────────────────────────────────────
+// ─── getCategoryDetail (v2) ───────────────────────────────────────────────────
 
-describe('getCategoryDetail', () => {
-  it('returns a non-empty string for photos with fallback tags', () => {
-    const msg = getCategoryDetail('photos', [], MOCK_PRICING);
+describe('getCategoryDetail (v2)', () => {
+  it('returns a non-empty string for photos using calculatePhotoPrice scale', () => {
+    const msg = getCategoryDetail('photos', []);
     expect(typeof msg).toBe('string');
     expect(msg.length).toBeGreaterThan(10);
-    expect(msg).toContain('7€');   // 1_foto price
-    expect(msg).toContain('15€');  // 3_fotos price
+    expect(msg).toContain('7€');   // calculatePhotoPrice(1)
+    expect(msg).toContain('15€');  // calculatePhotoPrice(3)
   });
 
   it('uses supplied media tags when provided (photos)', () => {
-    const msg = getCategoryDetail('photos', ['peliroja', 'botas'], MOCK_PRICING);
+    const msg = getCategoryDetail('photos', ['peliroja', 'botas']);
     expect(msg).toMatch(/peliroja|botas/);
   });
 
-  it('returns a string for videos with fallback tags', () => {
-    const msg = getCategoryDetail('videos', [], MOCK_PRICING);
+  it('returns the v2 video list for videos (no min/€ legacy format)', () => {
+    const msg = getCategoryDetail('videos', []);
     expect(typeof msg).toBe('string');
-    expect(msg).toContain('10€'); // 2min price
-    expect(msg).toContain('20€'); // 5min price
+    expect(msg).toMatch(/mis videos/i);
+    expect(msg).not.toMatch(/\d\s*min\s*\d+€/i);
   });
 
-  it('returns a string for sexting', () => {
-    const msg = getCategoryDetail('sexting', [], MOCK_PRICING);
-    expect(msg).toContain('3€');
-    expect(msg).toContain('5 min');
+  it('returns the v2 sexting options (5/10/15 min)', () => {
+    const msg = getCategoryDetail('sexting', []);
+    expect(msg).toMatch(/5\s*min/);
+    expect(msg).toMatch(/10\s*min/);
+    expect(msg).toMatch(/15\s*min/);
+    expect(msg).not.toMatch(/3\s*€\s*\/\s*min/);
   });
 
-  it('returns a string for videocall', () => {
-    const msg = getCategoryDetail('videocall', [], MOCK_PRICING);
-    expect(msg).toContain('4€');
-    expect(msg).toContain('5 min');
+  it('returns a string for videocall mentioning per-minute and minimum', () => {
+    const msg = getCategoryDetail('videocall', []);
+    expect(msg).toMatch(/€\s*\/\s*min/);
+    expect(msg).toMatch(/min/);
   });
 
-  it('returns a string for custom', () => {
-    const msg = getCategoryDetail('custom', [], MOCK_PRICING);
-    expect(msg).toContain('45€');
+  it('returns a string for custom from products.personalizado.precio_minimo', () => {
+    const msg = getCategoryDetail('custom', []);
+    expect(msg).toMatch(/desde\s*\d+€/);
   });
 
   it('returns empty string for unknown category', () => {
-    expect(getCategoryDetail('unknown', [], MOCK_PRICING)).toBe('');
+    expect(getCategoryDetail('unknown', [])).toBe('');
   });
 
   it('does not mention "nivel" technical terms', () => {
     for (const cat of ['photos', 'videos', 'sexting', 'videocall', 'custom']) {
-      const msg = getCategoryDetail(cat, [], MOCK_PRICING);
+      const msg = getCategoryDetail(cat, []);
       expect(msg).not.toMatch(/nivel[_\s][135]/i);
     }
   });

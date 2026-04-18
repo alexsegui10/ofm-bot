@@ -2,8 +2,19 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+import { getProducts, generateGreetingCatalog } from '../config/products.js';
+import {
+  formatVideoListText,
+  formatPackListText,
+  formatSextingOptionsText,
+} from './content-dispatcher.js';
+import { calculatePhotoPrice } from './pricing.js';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// ─── LEGACY pricing.json loader (kept for resolveProduct + thresholds) ───────
+// Kept for: resolveProduct (legacy intents), getVipThreshold, getMinTransaction.
+// Catalog text + category detail now read from products.json (v2).
 let _pricing;
 
 export function getPricing() {
@@ -23,7 +34,7 @@ export function reloadPricing() {
   return getPricing();
 }
 
-// ─── Intent → default product mapping ────────────────────────────────────────
+// ─── Intent → default product mapping (LEGACY) ───────────────────────────────
 
 const INTENT_DEFAULTS = {
   sale_intent_photos:   { category: 'fotos',        key: '1_foto' },
@@ -42,7 +53,11 @@ const CATEGORY_TO_PRODUCT_TYPE = {
 };
 
 /**
- * Resolve the default product offer for a given router intent.
+ * LEGACY — Resolve the default product offer for a router intent from pricing.json.
+ *
+ * Still used by the orchestrator's `payment_method_selection` branch and the
+ * legacy single-intent paths. v2 flows use `createOfferFromProduct(productId)`
+ * from src/agents/sales.js which reads products.json instead.
  *
  * @param {string} intent
  * @param {object} [pricing]
@@ -117,45 +132,33 @@ export function getMinTransaction(pricing = getPricing()) {
   return pricing.limites_pago?.minimo_transaccion_eur ?? 3;
 }
 
-// ─── Catalog text ─────────────────────────────────────────────────────────────
+// ─── Catalog text (v2 — reads products.json) ─────────────────────────────────
 
 /**
- * Returns the fixed catalog message from pricing.json.
+ * Returns the catalog message generated from products.json (v2).
  * Sent as-is to the client — does NOT pass through Persona or Quality Gate.
  *
- * @param {object} [pricing]
+ * The optional `pricing` parameter is accepted for backwards compatibility
+ * with legacy callers/tests but is ignored: the v2 catalog is always sourced
+ * from products.json via `generateGreetingCatalog()`.
+ *
+ * @param {object} [_pricingIgnored]  Legacy parameter, ignored.
  * @returns {string}
  */
-export function getCatalogText(pricing = getPricing()) {
-  return pricing.catalogo_mensaje ?? '';
+export function getCatalogText(_pricingIgnored = undefined) {
+  return generateGreetingCatalog();
 }
 
-// ─── Category detail ──────────────────────────────────────────────────────────
+// ─── Category detail (v2) ────────────────────────────────────────────────────
 
-const FALLBACK_TAGS = {
-  photos: ['culo', 'tetas', 'coño', 'lencería', 'cuerpo entero', 'en la ducha', 'con tacones'],
-  videos: ['masturbándome', 'follando', 'squirt', 'mamadas', 'tocándome', 'duchándome', 'en lencería'],
-};
+const FALLBACK_PHOTO_TAGS = ['culo', 'tetas', 'coño', 'lencería', 'tacones', 'ducha'];
 
-/**
- * Format a tag list as "a, b, c y d" (Oxford-style with "y" before last).
- * @param {string[]} tags
- * @returns {string}
- */
 function formatTagList(tags) {
   if (tags.length === 0) return 'de todo';
   if (tags.length === 1) return tags[0];
   return `${tags.slice(0, -1).join(', ')} y ${tags[tags.length - 1]}`;
 }
 
-/**
- * Sort tags so those matching words in userMessage come first.
- * Tags not mentioned are shuffled randomly after the matched ones.
- *
- * @param {string[]} tags
- * @param {string} userMessage
- * @returns {string[]}
- */
 function sortTagsByRelevance(tags, userMessage) {
   const lower = (userMessage || '').toLowerCase();
   const matched = tags.filter((t) => lower.includes(t.toLowerCase()));
@@ -165,62 +168,80 @@ function sortTagsByRelevance(tags, userMessage) {
 
 /**
  * Generate a natural-language product detail message for a specific category.
- * Uses real media tags when provided; falls back to hardcoded generic list.
- * If userMessage is provided, tags mentioned in it are listed first.
+ * V2 implementation — reads from products.json.
+ *
+ *  - photos    → fotos sueltas con tabla escalonada (calculatePhotoPrice) + cheapest pack
+ *  - videos    → formatVideoListText() — lista de v_XXX activos
+ *  - sexting   → formatSextingOptionsText() — 3 templates (5/10/15 min)
+ *  - videocall → tarifa por minuto desde products.videollamada
+ *  - custom    → precio mínimo desde products.personalizado
+ *
+ * `mediaTags` se usa para personalizar el inicio del bloque de fotos cuando
+ * existen tags reales del catálogo (`media` table). Si vacío, se usan los
+ * tags_disponibles de products.photo_single.
  *
  * @param {'photos'|'videos'|'sexting'|'videocall'|'custom'} category
- * @param {string[]} mediaTags  Real tags from media table (empty → use fallback)
- * @param {object} [pricing]
- * @param {string} [userMessage]  Raw client message for tag prioritisation
+ * @param {string[]} [mediaTags]
+ * @param {object} [_unused]  Legacy parameter, ignored.
+ * @param {string} [userMessage]  Para priorizar tags mencionados.
  * @returns {string}
  */
-export function getCategoryDetail(category, mediaTags = [], pricing = getPricing(), userMessage = '') {
-  const tags = mediaTags.length > 0 ? mediaTags : (FALLBACK_TAGS[category] ?? []);
-  const sample = userMessage
-    ? sortTagsByRelevance(tags, userMessage)
-    : [...tags].sort(() => Math.random() - 0.5);
-  const tagStr = formatTagList(sample);
+export function getCategoryDetail(category, mediaTags = [], _unused = undefined, userMessage = '') {
+  const products = getProducts();
 
   if (category === 'photos') {
-    const f = pricing.fotos;
+    const tagSource = mediaTags.length > 0
+      ? mediaTags
+      : (products.photo_single?.tags_disponibles ?? FALLBACK_PHOTO_TAGS);
+    const sample = userMessage
+      ? sortTagsByRelevance(tagSource, userMessage)
+      : [...tagSource].sort(() => Math.random() - 0.5);
+    const tagStr = formatTagList(sample);
     const topTag = sample[0] || 'todo tipo';
+    const single1 = calculatePhotoPrice(1);
+    const single2 = calculatePhotoPrice(2);
+    const single3 = calculatePhotoPrice(3);
+    const cheapestPack = products.photo_packs
+      .filter((p) => p.activo)
+      .reduce((min, p) => (p.precio_eur < min ? p.precio_eur : min), Infinity);
+    const packsLine = Number.isFinite(cheapestPack)
+      ? `\no tengo packs desde ${cheapestPack}€`
+      : '';
     return (
       `tengo de ${tagStr} 🔥\n` +
-      `1 foto de ${topTag} ${f['1_foto'].precio_eur}€, 2 fotos ${f['2_fotos'].precio_eur}€ o pack de 3 por ${f['3_fotos'].precio_eur}€\n` +
+      `1 foto de ${topTag} ${single1}€, 2 fotos ${single2}€, 3 fotos ${single3}€${packsLine}\n` +
       `cuántas quieres?`
     );
   }
+
   if (category === 'videos') {
-    const v = pricing.videos;
-    const t0 = sample[0] || 'contenido rico';
-    const t1 = sample[1] || t0;
-    const t2 = sample[2] || t0;
-    return (
-      `tengo uno de 2min de ${t0} por ${v['2min'].precio_eur}€, uno de 3min ${t1} por ${v['3min'].precio_eur}€, o uno largo de 5min con ${t2} por ${v['5min'].precio_eur}€\n` +
-      `cuál te va bebe? 😈`
-    );
+    return formatVideoListText();
   }
+
   if (category === 'sexting') {
-    const s = pricing.sexting;
-    const minTotal = s.precio_por_minuto * s.minimo_minutos;
-    return (
-      `son ${s.precio_por_minuto}€/min, mínimo ${s.minimo_minutos} min (${minTotal}€)\n` +
-      `cuántos minutos quieres? y cómo pagas: bizum, crypto o stars 😈`
-    );
+    return formatSextingOptionsText();
   }
+
   if (category === 'videocall') {
-    const vc = pricing.videollamada;
+    const vc = products.videollamada;
     const minTotal = vc.precio_por_minuto * vc.minimo_minutos;
     return (
       `son ${vc.precio_por_minuto}€/min bebe, mínimo ${vc.minimo_minutos} min (${minTotal}€)\n` +
       `cuándo te va y cómo quieres pagar? 😈`
     );
   }
+
   if (category === 'custom') {
-    return `personalizados desde ${pricing.personalizado.precio_base}€ bebe, dime qué quieres y te cuento`;
+    const base = products.personalizado.precio_minimo;
+    return `personalizados desde ${base}€ bebe, dime qué quieres y te cuento`;
   }
+
   return '';
 }
+
+// Re-export the v2 helper so other modules can grab the formatted pack list
+// without pulling in content-dispatcher directly.
+export { formatPackListText };
 
 // ─── Post-service message ─────────────────────────────────────────────────────
 
