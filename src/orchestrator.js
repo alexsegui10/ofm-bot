@@ -277,6 +277,37 @@ export function buildSextingKickoffInstruction({ roleplay, templateId }) {
   ].join('\n');
 }
 
+// HIGH-ROI FIX #3 — deterministic short-circuit for "¿eres un bot?" probes.
+// Persona (Grok) inconsistently handles these: sometimes confirms (catastrophic),
+// sometimes dodges awkwardly. Intercepting before Persona guarantees Alba stays
+// in character regardless of which LLM variant answers. Affects baseline D6.
+//
+// Pattern matches:  ¿eres (un) bot/ia/robot/chatbot/asistente virtual/gpt/chatgpt?
+//                   ¿estoy hablando con (un) bot/ia?
+//                   ¿esto lo escribe (una) IA?
+//                   ¿te programó...?  ¿eres real / eres humana / eres una persona?
+const BOT_QUESTION_PATTERN = /\b(eres|est[aá]s?|estoy\s+hablando\s+con|esto\s+(lo\s+)?(escribe|contesta|responde))\s+(un[ao]?\s+)?(bot|ia|i\.a\.|robot|chatbot|chat\s*bot|asistente\s+virtual|asistente\s+de\s+ia|gpt|chat\s*gpt|inteligencia\s+artificial|m[aá]quina|programa)\b/i;
+const IS_REAL_PATTERN     = /\b(eres|sos)\s+(real|humana|una\s+persona\s+real|de\s+verdad)\s*[\?]?/i;
+
+// Fixed in-character denials. Kept short/natural to match Alba's texting voice.
+const BOT_DENIAL_RESPONSES = [
+  'jajaja bot? q va bebe, soy alba de verdad 😅',
+  'claro que soy real jaja, me ofendes 🙃',
+  'jaja no soy ningún bot tonto, escribo yo',
+];
+
+function isBotQuestion(text) {
+  if (!text) return false;
+  return BOT_QUESTION_PATTERN.test(text) || IS_REAL_PATTERN.test(text);
+}
+
+function pickBotDenial() {
+  return BOT_DENIAL_RESPONSES[Math.floor(Math.random() * BOT_DENIAL_RESPONSES.length)];
+}
+
+// Exported for tests.
+export { isBotQuestion, BOT_QUESTION_PATTERN, IS_REAL_PATTERN, BOT_DENIAL_RESPONSES };
+
 // v2 intents routed through the products.json catalog (resolved via content-dispatcher).
 const V2_LIST_INTENTS    = new Set(['ask_video_list', 'ask_pack_list']);
 const V2_CHOOSE_INTENTS  = new Set(['choose_video', 'choose_pack', 'buy_sexting_template']);
@@ -504,6 +535,20 @@ export async function handleMessage({
       }, 'pipeline complete (sexting v2 active turn)');
       return { fragments, intent: 'sexting_active', sextingTurn: turn };
     }
+  }
+
+  // ── 1c. Bot-question short-circuit (HIGH-ROI FIX #3) ────────────────────
+  // If the client asks "¿eres un bot?" / "¿eres real?" we bypass Router +
+  // Persona and answer with a deterministic in-character denial. Persona
+  // inconsistency on this probe caused baseline D6 regressions.
+  if (text && isBotQuestion(text)) {
+    await saveMessage(client.id, 'user', text);
+    const denial = pickBotDenial();
+    await saveMessage(client.id, 'assistant', denial, 'small_talk');
+    const cfg = getPacerConfig();
+    const fragments = fragmentMessage(denial, cfg);
+    log.info({ chat_id: chatId, text_preview: text.slice(0, 40), latency_ms: Date.now() - start }, 'pipeline complete (bot-question short-circuit)');
+    return { fragments, intent: 'small_talk' };
   }
 
   // ── 2. Fetch history ────────────────────────────────────────────────────
