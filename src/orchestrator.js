@@ -205,11 +205,12 @@ const V2_INTENTS = new Set([
  *
  * @returns {Promise<{ fragments: string[], intent: string } | null>}
  */
-async function handleV2Intent({ intent, text, client, chatId, start }) {
+async function handleV2Intent({ intent, text, client, chatId, start, routerParams = null }) {
   if (!V2_INTENTS.has(intent)) return null;
 
   const cfg = getPacerConfig();
   const paymentMethod = detectPaymentMethod(text);
+  const rp = routerParams && typeof routerParams === 'object' ? routerParams : {};
 
   // ── Lists ────────────────────────────────────────────────────────────────
   if (intent === 'ask_video_list' || intent === 'ask_pack_list') {
@@ -233,10 +234,15 @@ async function handleV2Intent({ intent, text, client, chatId, start }) {
 
   // ── Choose video / pack / sexting template ───────────────────────────────
   if (V2_CHOOSE_INTENTS.has(intent)) {
+    // Prefer router-extracted product_id / template_id; fall back to text match.
     let productId = null;
-    if (intent === 'choose_video')          productId = matchVideoFromText(text)?.id ?? null;
-    else if (intent === 'choose_pack')      productId = matchPackFromText(text)?.id ?? null;
-    else if (intent === 'buy_sexting_template') productId = matchSextingTemplateFromText(text)?.id ?? null;
+    if (intent === 'choose_video') {
+      productId = rp.product_id || matchVideoFromText(text)?.id || null;
+    } else if (intent === 'choose_pack') {
+      productId = rp.product_id || matchPackFromText(text)?.id || null;
+    } else if (intent === 'buy_sexting_template') {
+      productId = rp.template_id || matchSextingTemplateFromText(text)?.id || null;
+    }
 
     if (!productId) return null;
 
@@ -270,9 +276,15 @@ async function handleV2Intent({ intent, text, client, chatId, start }) {
 
   // ── Buy single photos (e.g. "2 fotos de culo") ───────────────────────────
   if (intent === 'buy_single_photos') {
-    const parsed = parseSinglePhotoRequest(text);
-    if (!parsed) return null;
-    const { count, tag } = parsed;
+    // Prefer router-extracted {tag, count}; fall back to regex parser.
+    let count = (typeof rp.count === 'number') ? rp.count : null;
+    let tag = (typeof rp.tag === 'string') ? rp.tag : null;
+    if (count == null || tag == null) {
+      const parsed = parseSinglePhotoRequest(text);
+      if (!parsed) return null;
+      count = count ?? parsed.count;
+      tag = tag ?? parsed.tag;
+    }
     try {
       const offer = await createOfferFromProduct({
         productId: `singles:${tag}:${count}`,
@@ -382,7 +394,7 @@ export async function handleMessage({
   await saveMessage(client.id, 'user', savedText);
 
   // ── 4. Router ───────────────────────────────────────────────────────────
-  const { intent, confidence, fraud_score, reasoning } = await runRouter(savedText, history, client);
+  const { intent, confidence, fraud_score, reasoning, params } = await runRouter(savedText, history, client);
   log.debug({ intent, confidence, fraud_score, reasoning, is_new_client: isNewClient, prior_messages: priorMessageCount }, 'router done');
 
   if (fraud_score > 0.3) {
@@ -556,6 +568,7 @@ export async function handleMessage({
     client: updatedClient ?? client,
     chatId,
     start,
+    routerParams: params || null,
   });
   if (v2Reply) return v2Reply;
 
