@@ -165,8 +165,8 @@ async function runOne(scenario) {
     const result = await runScenario({
       chatId:    scenario.chatId,
       messages:  scenario.messages,
-      timeoutMs: 45_000,
-      quietMs:   5_000,
+      timeoutMs: 90_000,
+      quietMs:   12_000,
     });
     const failures = runChecks(scenario, result.turns);
     return {

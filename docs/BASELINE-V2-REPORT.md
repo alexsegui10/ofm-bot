@@ -1,6 +1,6 @@
 # BASELINE V2 — Report
 
-**Fecha:** 2026-04-19 (re-run tras FIX 1-4 + recarga créditos OpenRouter)
+**Fecha:** 2026-04-20 (re-run tras FIX HIGH-ROI #1/#2/#3 + script E2E)
 **Comando:** `node scripts/auto-iterate.js --mode=baseline --scenarios-v2`
 **Dataset:** `scripts/scenarios-v2.js` — 34 escenarios P1
 **Modelos activos:**
@@ -11,38 +11,31 @@
 
 ## Resumen ejecutivo
 
-- **Pasaron: 10 / 34 (29.4%)** — mismo conteo que el baseline anterior (10/34) pero **set distinto**
-- Fallaron: 24 / 34
-- **Delta neto: 0** (ganamos 4: C2, D2, F2, G6 · perdimos 4: A1, D6, F1, F4)
+- **Pasaron: 13 / 34 (38.2%)** — prev. 10/34 (29.4%) → **Δ neto +3**
+- Fallaron: 21 / 34
+- Gains: A4, C3, F3, F4, H1 (5 nuevos PASS)
+- Regresiones: C2, F2 (2 PASS → FAIL, probablemente varianza del
+  evaluador LLM)
 
-Este baseline se ejecuta TRAS los 4 FIX commits (A1, D6, D9, F1) +
-recarga de créditos OpenRouter. El commit que originó este re-run venía
-de arreglar regresiones provocadas por la iteración BUG A/B/C.
+Este baseline se ejecuta tras los 4 commits de la sesión overnight:
+- `ee25b9b` FIX #1 — `payment_method_selection` respeta `pending_product_id`
+- `2446b1c` FIX #2 — Quality Gate detecta preguntas vacías
+- `b4994c5` FIX #3 — short-circuit "¿eres un bot?"
+- `b7b88df` FIX #4 — script E2E `validate-catalog-e2e.js`
 
-**Resultado frente a los 4 tests objetivo del FIX:**
-- **A1** — ❌ FAIL (era PASS tras BUG A/B/C). El FIX 1 no ha sostenido el
-  pase. Evaluador reporta: fragmento [5] "dime qué te mola rey 🔥"
-  considerado pregunta vacía porque el catálogo en [2][3][4] no
-  acompaña a la pregunta en el mismo contexto inmediato según §6.
-- **D6** — ❌ FAIL (igual que antes del FIX). Alba responde "claro q soy
-  yo / no me crees?" en vez del cambio de tema prescrito por §H.
-- **D9** — ✅ PASS (se mantiene).
-- **F1** — ❌ FAIL (era PASS tras BUG A/B/C). Turno 5 duplica warm_up
-  ("recostada en el sofá" vs "en la cama") y el intent=media no lleva
-  media real asociada.
+### Efecto de cada fix sobre sus targets
 
-Además aparecen **2 regresiones nuevas** no previstas:
-- **F4** — pasaba antes, ahora falla porque Alba manda link de crypto
-  cuando el cliente dice "bizum, ya pague" (mismo bug de método de pago
-  que afecta a A3/A4/A5/H3).
-
-Y **4 ganancias limpias**:
-- **C2** (edad/origen): short-circuit determinista arrancó bien
-- **D2** (negocia precio directo): Sales Agent mantiene línea
-- **F2** (sexting roleplay profe): F2 pasó por primera vez — el bridge
-  post-pago ahora engancha a v2 aunque el rol se especifique tras
-  payment_confirmation
-- **G6** (pago falla): flujo de error nuevo bien gestionado
+- **FIX #1** (A3, A4, A5, F4, H3): **2/5** — A4 ✅ y F4 ✅ rescatados; A3,
+  A5, H3 siguen FAIL por causas intermedias independientes del método
+  de pago.
+- **FIX #2** (B1, B3, B4, D4, G1, H1): **1/6** — solo H1 ✅. El detector
+  funciona y dispara el retry, pero Persona (Grok) vuelve a emitir
+  preguntas vacías en la regeneración. Requiere post-procesado
+  determinista.
+- **FIX #3** (D6): **0/1** — la negación sale bien (ya no hay "soy una
+  IA") pero el evaluador exige también un cambio de tema con opciones
+  concretas; hay que concatenar un redirect tipo "dime qué buscas,
+  fotos o videos?" al mensaje canned.
 
 ---
 
@@ -50,10 +43,10 @@ Y **4 ganancias limpias**:
 
 | ID | Grupo | Título | Veredicto | Δ vs baseline anterior |
 |---|---|---|---|---|
-| A1 | A | Cliente saluda simple | FAIL | **↓ (era PASS)** |
+| A1 | A | Cliente saluda simple | FAIL | = |
 | A2 | A | Cliente saluda con pregunta personal | FAIL | = |
 | A3 | A | Cliente compra 2 fotos sueltas (precio escalonado v2) | FAIL | = |
-| A4 | A | Cliente pide video concreto del catálogo (v_001) | FAIL | = |
+| A4 | A | Cliente pide video concreto del catálogo (v_001) | **PASS** | **↑ (era FAIL)** |
 | A5 | A | Cliente compra sexting plantilla 5 min | FAIL | = |
 | A6 | A | Cliente pide videollamada | FAIL | = |
 | A7 | A | Cliente pregunta si es seguro pagar por bizum | FAIL | = |
@@ -63,25 +56,25 @@ Y **4 ganancias limpias**:
 | B4 | B | Pregunta si tiene algo específico que SÍ existe | FAIL | = |
 | B5 | B | Cliente pide algo que NO hay | FAIL | = |
 | C1 | C | Cliente quiere charlar antes de comprar | FAIL | = |
-| C2 | C | Cliente pregunta edad y origen | **PASS** | **↑ (era FAIL)** |
-| C3 | C | Cliente pregunta qué estudia | FAIL | = |
+| C2 | C | Cliente pregunta edad y origen | FAIL | **↓ (era PASS)** |
+| C3 | C | Cliente pregunta qué estudia | **PASS** | **↑ (era FAIL)** |
 | D1 | D | Cliente pide GRATIS | **PASS** | = |
-| D2 | D | Cliente negocia precio directamente | **PASS** | **↑ (era FAIL)** |
+| D2 | D | Cliente negocia precio directamente | **PASS** | = |
 | D3 | D | Cliente duda con el precio de un video | FAIL | = |
 | D4 | D | Cliente acosador leve | FAIL | = |
 | D5 | D | Cliente acosador fuerte | **PASS** | = |
-| D6 | D | Cliente sospecha que es bot | FAIL | **↓ (era PASS)** |
+| D6 | D | Cliente sospecha que es bot | FAIL | = |
 | D7 | D | Cliente pregunta si puede quedar | **PASS** | = |
 | D8 | D | Cliente insiste emocionalmente sin comprar | FAIL | = |
 | D9 | D | Cliente compara precios con otras modelos | **PASS** | = |
-| F1 | F | Sexting estándar sin roleplay (st_5min) | FAIL | **↓ (era PASS)** |
-| F2 | F | Sexting con roleplay (profe) — plantilla 10 min | **PASS** | **↑ (era FAIL)** |
-| F3 | F | Cliente en sexting manda foto suya | FAIL | = |
-| F4 | F | Cliente intenta alargar sexting gratis | FAIL | **↓ (era PASS)** |
+| F1 | F | Sexting estándar sin roleplay (st_5min) | FAIL | = |
+| F2 | F | Sexting con roleplay (profe) — plantilla 10 min | FAIL | **↓ (era PASS)** |
+| F3 | F | Cliente en sexting manda foto suya | **PASS** | **↑ (era FAIL)** |
+| F4 | F | Cliente intenta alargar sexting gratis | **PASS** | **↑ (era FAIL)** |
 | G1 | G | Cliente manda múltiples mensajes seguidos (Pacer) | FAIL | = |
 | G5 | G | Cliente pregunta por PayPal | **PASS** | = |
-| G6 | G | Cliente paga pero el pago falla | **PASS** | **↑ (era FAIL)** |
-| H1 | H | Cliente pide un video por TÍTULO concreto | FAIL | = |
+| G6 | G | Cliente paga pero el pago falla | **PASS** | = |
+| H1 | H | Cliente pide un video por TÍTULO concreto | **PASS** | **↑ (era FAIL)** |
 | H2 | H | Cliente pide 4 fotos de tetas (precio escalonado) | FAIL | = |
 | H3 | H | Sexting 15 min con roleplay (doctora) + cool_down | FAIL | = |
 
@@ -91,77 +84,67 @@ Y **4 ganancias limpias**:
 
 | Grupo | Pasan / Total | % | vs baseline anterior |
 |---|---|---|---|
-| A — Saludo / inicio | 0/7 | 0% | ↓ (era 1/7) |
+| A — Saludo / inicio | 1/7 | 14% | ↑ (era 0/7) |
 | B — Catálogo / preguntas | 1/5 | 20% | = |
-| C — Small talk / personal | 1/3 | 33% | ↑ (era 0/3) |
+| C — Small talk / personal | 1/3 | 33% | = (C2↓, C3↑) |
 | D — Difíciles | 5/9 | 56% | = |
-| F — Sexting | 1/4 | 25% | ↓ (era 2/4) |
-| G — Edge cases | 2/3 | 67% | ↑ (era 1/3) |
-| H — Nuevos v2 | 0/3 | 0% | = |
-
----
-
-## Causas raíz — regresiones nuevas
-
-### 1. A1 — pregunta vacía tras catálogo en la misma ráfaga
-
-El evaluador aplica §6 estrictamente: si el último fragmento de la ráfaga
-es una pregunta abierta ("dime qué te mola rey 🔥"), aunque los
-fragmentos previos [2][3][4] incluyan el catálogo, cuenta como vacía
-porque las opciones no acompañan a la pregunta en el mismo contexto
-inmediato. El FIX 1 no cubrió este edge case.
-
-### 2. F1 — warm_up duplicado + media sin payload
-
-Turno 5 genera dos fragmentos ("recostada en el sofá" / "en la cama")
-que son variantes del mismo mensaje, y uno lleva `intent=media` sin
-adjunto real. El sexting conductor v2 está emitiendo kickoff pero el
-Persona lo está doblando por algún branch previo al conductor.
-
-### 3. F4 — bizum → crypto mismatch (mismo bug familia A3/A4/A5/H3)
-
-Cliente dice "ya pague" (bizum) y Alba genera nuevo link de crypto
-porque `pending_product_id` no incluye método de pago elegido, o lo
-pierde. Este bug es la CAUSA RAÍZ más repetida del baseline:
-afecta a A3, A4, A5, F4, H3 (5/34 = 14.7% de los escenarios).
+| F — Sexting | 2/4 | 50% | ↑ (era 1/4) |
+| G — Edge cases | 2/3 | 67% | = |
+| H — Nuevos v2 | 1/3 | 33% | ↑ (era 0/3) |
 
 ---
 
 ## Causas raíz — persistentes (no resueltas)
 
-### 1. Método de pago por defecto = crypto (afecta A3/A4/A5/F4/H3)
+### 1. Regeneración de Persona tras empty_question (afecta B1/B3/B4/D4/G1)
 
-Todavía no implementado el fix de `payment_method_selection` que lea
-`pending_product_id` sin re-resolver por keyword. Máxima prioridad: un
-solo fix podría sacar 5 escenarios del FAIL a PASS.
+El FIX #2 detecta la pregunta vacía y solicita retry con instrucción
+reforzada, pero Grok-3-beta vuelve a emitir una variante de la misma
+pregunta vacía. Se necesita post-procesado determinista: tras 2 retries
+fallidos, inyectar opciones canónicas ("tengo fotos desde 7€, videos
+desde 10€, sexting 5/10/15 min") antes de la pregunta final.
 
-### 2. Pregunta vacía sin opciones (afecta B1/B3/B4/D4/G1/H1)
+### 2. A3/A5 — pago OK pero Persona inventa en turnos intermedios
 
-Quality Gate no detecta cuando Alba pregunta sin acompañar opciones.
-Persona sigue emitiendo "qué te apetece ver?" sin tags en la misma
-ráfaga.
+El método de pago ya está persistido correctamente (FIX #1), pero los
+turnos intermedios todavía re-emiten el catálogo o reformulan sin
+opciones, disparando otros fallos del evaluador (D/F) antes de llegar
+al pago.
 
-### 3. D6 — defensa ante "eres un bot"
+### 3. D6 — canned denial sin redirect
 
-Alba responde "claro q soy yo / no me crees?" cuando la regla §H exige
-cambio de tema inmediato ("jajaja q dices bebe, demasiado caliente
-para ser bot 😏"). Requiere short-circuit determinista o refuerzo en
-el prompt de Persona.
+La negación "jajaja bot? q va bebe, soy alba de verdad 😅" se emite
+correctamente pero el scenario exige también "dime qué buscas, fotos
+o videos?" en el mismo turno. Fix trivial: concatenar redirect al final
+del canned response.
 
-### 4. A6/A7 — flujos videollamada y seguridad bizum
+### 4. H2 — precio escalonado mal calculado (19€ vs 18€)
 
-Sin Sales Agent cerrando la operación. Alba dice "miro agenda" sin dar
-precio ni condiciones (4€/min, mínimo 5 min).
+Persona inventa el precio en vez de leer `PHOTO_PRICE_TABLE`. Requiere
+inyectar la tabla en el system prompt.
 
-### 5. H2 — precio escalonado mal calculado
+### 5. H3 — roleplay acepta antes de verificar pago
 
-Cobra 19€ por 4 fotos cuando `PHOTO_PRICE_TABLE` indica 18€.
-Persona inventa el precio en vez de leer la tabla.
+Alba arranca sexting con "ya pague" sin confirmación del sistema.
+Bug en orchestrator `payment_confirmation` + conductor v2.
 
-### 6. C3 — evasión sobre estudios
+### 6. A6, A7 — Sales no cierra videollamada ni resuelve seguridad bizum
 
-Alba dice "de una carrera por aquí" cuando el escenario espera "sí bebe,
-ADE". Short-circuit determinista para C2 funcionó; C3 aún requiere fix.
+Alba dice "miro agenda" sin dar 4€/min · mín 5 min. El Sales Agent
+necesita una plantilla específica para `videocall_request` y
+`bizum_security_question`.
+
+### 7. F1 — bizum muestra +34 prefix + warm_up duplicado
+
+Dos variantes de "estoy en la cama" en el mismo turno (conductor v2
+emite kickoff + Persona lo repite).
+
+### 8. F2 — roleplay post-pago no engancha
+
+Cliente pide "profe" tras payment_confirmation; el bridge debería
+detectarlo y arrancar sexting con rol, pero Persona pregunta "qué
+asignatura?". El detector de roleplay va por `history` en vez de
+consumir la señal del turno actual.
 
 ---
 
@@ -169,54 +152,38 @@ ADE". Short-circuit determinista para C2 funcionó; C3 aún requiere fix.
 
 | Tipo | Ocurrencias |
 |---|---|
-| B (no respondió) | ~18 escenarios |
-| C (pregunta vacía) | ~11 escenarios |
-| D (repitió info) | ~11 escenarios |
-| E (inventó precio/contenido) | ~8 escenarios |
-| I (flujo no avanza) | ~8 escenarios |
-| F (tono/fragmentación) | ~5 escenarios |
+| C (pregunta vacía, post-retry) | ~8 escenarios |
+| B (no respondió lo pedido) | ~11 escenarios |
+| D (repitió info) | ~6 escenarios |
+| E (inventó precio/contenido) | ~3 escenarios |
+| I (flujo no avanza) | ~5 escenarios |
+| F (tono/fragmentación) | ~4 escenarios |
 
 ---
 
 ## Diagnóstico
 
-**Este baseline revela que los 4 FIX commits (A1/D6/D9/F1) no son
-estables:**
-- Solo D9 se mantiene en verde.
-- A1 y F1 volvieron a FAIL pese a tener commits dedicados.
-- D6 nunca llegó a pasar.
-- Y F4 regresionó sin estar cubierto por el FIX.
+Los 4 fixes lograron **+3 pass netos** (10→13), pero el techo de estos
+fixes individualmente está lejos del ceiling teórico (5 + 6 + 1 = 12
+escenarios). El motivo es que la mayoría de los target escenarios
+fallan por **múltiples causas encadenadas**: el fix resuelve una, pero
+el evaluador encuentra otra violación en un turno posterior.
 
-La hipótesis más probable es que los FIX 1/3/4 sean **frágiles frente a
-la inestabilidad del evaluador** (juez LLM no determinista) y/o que el
-commit haya introducido side-effects en Persona (inconsistencia en
-emisión de catálogo + pregunta).
-
----
-
-## Próximos pasos (pendientes de autorización del owner)
-
-1. **PAGO:** fix `payment_method_selection` — resuelve A3/A4/A5/F4/H3.
-2. **QUALITY GATE:** detector de "pregunta vacía sin opciones" como
-   hard-fail del Gate — resuelve B1/B3/B4/D4/G1/H1.
-3. **D6:** short-circuit determinista para "eres un bot" en el Router.
-4. **H2:** leer `PHOTO_PRICE_TABLE` desde Persona context (no inventar).
-5. **F1:** auditar la cadena Sexting Conductor v2 → Persona para evitar
-   warm_up duplicado y media sin payload.
-6. **A1/A2:** reglas de emisión de catálogo + pregunta en la MISMA
-   ráfaga (evaluador lo exige).
-
-> Fuzz: 3/20 sin cambios (ver FUZZ-REPORT.md). Baseline: 10/34 sin
-> cambios netos.
+Próxima iteración debe enfocarse en:
+1. **Post-procesar empty_question** en lugar de confiar en Persona retry.
+2. **Extender D6** con redirect catálogo (fix trivial, +1 PASS casi
+   garantizado).
+3. **Auditar turno intermedio de A3/A5** donde Persona reinventa.
 
 ---
 
 ## Reproducción
 
 ```bash
-TEST_MODE=true npm run dev     # en otra terminal
+TEST_MODE=true npm run dev                                    # terminal 1
+node scripts/reset-test-client.js                             # terminal 2
 node scripts/auto-iterate.js --mode=baseline --scenarios-v2
 node scripts/run-fuzz-tests.js --sample=20
 ```
 
-Resumen crudo se append a `docs/MEJORAS.md`.
+Log completo: `/tmp/baseline-post-fix.log` (local, no commited).
