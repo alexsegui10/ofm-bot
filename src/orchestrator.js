@@ -86,6 +86,63 @@ function shouldAppendCatalog(rawHistoryLength, lastInteraction) {
   return (Date.now() - lastInteraction.getTime()) > SEVEN_DAYS_MS;
 }
 
+// BUG C — markers that identify catalog / category-detail messages already
+// emitted by the orchestrator. We scan recent assistant history for these so
+// we don't re-emit the same block twice (D2/D7 regression).
+const CATALOG_MARKERS = [
+  'esto es lo que tengo',           // generateGreetingCatalog header
+  'cuántas quieres?',                // photos category detail closer
+  'tengo de ',                       // photos detail intro ("tengo de culo, tetas...")
+  '€/min bebe, mínimo',              // videocall detail
+  'personalizados desde ',           // custom detail
+];
+
+/**
+ * Returns true if any of the last `lookback` assistant messages already
+ * contains a catalog or category-detail block. Used to suppress automatic
+ * re-injection in turns 2+ (D2/D7) — the client only needs to see the menu
+ * again if they ASK for it explicitly.
+ *
+ * @param {Array<{role:string,content:string}>} history
+ * @param {number} [lookback=6]
+ */
+export function assistantHasShownCatalog(history, lookback = 6) {
+  if (!Array.isArray(history) || history.length === 0) return false;
+  const recentAssistant = history
+    .filter((m) => m && m.role === 'assistant')
+    .slice(-lookback);
+  for (const m of recentAssistant) {
+    const c = (m.content || '').toLowerCase();
+    if (CATALOG_MARKERS.some((mark) => c.includes(mark))) return true;
+  }
+  return false;
+}
+
+// Patterns that signal the client is EXPLICITLY asking to (re)see the menu.
+// Note: JS `\b` is ASCII-only, so we use Unicode-aware lookarounds for
+// Spanish words ending in accented chars (menú, catálogo).
+const NON_LETTER_LB = '(?<![a-záéíóúñ])';
+const NON_LETTER_LA = '(?![a-záéíóúñ])';
+const EXPLICIT_CATALOG_REQUEST_PATTERNS = [
+  /\bqu[eé]\s+(tienes|vendes|ofreces|hay)\b/i,
+  new RegExp(`${NON_LETTER_LB}(menu|menú|cat[aá]logo|lista|opciones)${NON_LETTER_LA}`, 'i'),
+  /\bqu[eé]\s+m[áa]s\s+(tienes|vendes|hay)\b/i,
+  new RegExp(
+    `${NON_LETTER_LB}(rep[ií]te(me)?|recu[eé]rdame|mu[eé]strame|p[aá]same)\\s+(la|el|las|los)?\\s*(menu|menú|cat[aá]logo|lista|opciones|precios)${NON_LETTER_LA}`,
+    'i',
+  ),
+];
+
+/**
+ * Returns true if the client message + intent show an EXPLICIT desire to
+ * (re)see the catalog. price_question always counts.
+ */
+export function clientExplicitlyAsksCatalog(text, intent) {
+  if (intent === 'price_question') return true;
+  const t = (text || '').toLowerCase();
+  return EXPLICIT_CATALOG_REQUEST_PATTERNS.some((p) => p.test(t));
+}
+
 /**
  * Detect preferred payment method from free-text message.
  * Defaults to 'crypto' if no explicit mention found.
@@ -671,11 +728,21 @@ export async function handleMessage({
     || V2_INTENTS.has(resolvedIntent)
     || resolvedIntent === 'custom_video_request';
 
+  // BUG C — suppress automatic re-emission of catalog / category-detail when
+  // the assistant already showed it in this conversation, UNLESS the client
+  // explicitly asks to see the menu again. Fixes D2/D7: in turn 4 of D2 the
+  // re-classified intent landed back in CATEGORY_DETAIL_INTENTS and the full
+  // photo-tags table was repeated even though the client had already chosen.
+  const alreadyShownCatalog = assistantHasShownCatalog(history);
+  const explicitCatalogAsk = clientExplicitlyAsksCatalog(savedText, resolvedIntent);
+  const suppressByHistory = alreadyShownCatalog && !explicitCatalogAsk;
+
   const appendCatalog = shouldAppendCatalog(priorMessageCount, lastInteraction)
     && !hasMedia
     && resolvedIntent !== 'payment_method_selection'
     && resolvedIntent !== 'payment_confirmation'
-    && !intentSkipsCatalog;
+    && !intentSkipsCatalog
+    && !suppressByHistory;
 
   if (appendCatalog) {
     // Case 1 / 2: Returning client after >7 days → full catalog
@@ -684,8 +751,9 @@ export async function handleMessage({
       saleFragments = fragmentMessage(catalogText, config);
       log.info({ chat_id: chatId, is_new_client: isNewClient }, 'catalog appended');
     }
-  } else if (!hasMedia && CATEGORY_DETAIL_INTENTS.has(resolvedIntent)) {
-    // Case 3: Client asks about specific category
+  } else if (!hasMedia && CATEGORY_DETAIL_INTENTS.has(resolvedIntent) && !suppressByHistory) {
+    // Case 3: Client asks about specific category (skip if already shown unless
+    // the client explicitly asks again).
     const category = INTENT_TO_CATEGORY[resolvedIntent];
     const mediaType = category === 'photos' ? 'photo' : category === 'videos' ? 'video' : null;
     const tags = mediaType ? await getMediaTags(mediaType) : [];
