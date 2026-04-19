@@ -7,6 +7,55 @@ import { getClientTier } from './profile-manager.js';
 const log = agentLogger('persona');
 
 /**
+ * Deterministic catalog-row patterns that the orchestrator emits as a
+ * separate fragment. If Persona repeats them in its text, the client sees
+ * a DUPLICATED catalog. We strip them post-hoc when the client has already
+ * been shown the catalog at least once (clients.has_seen_catalog === true).
+ *
+ * Exported for unit testing.
+ */
+export const CATALOG_REPEAT_PATTERNS = [
+  /\d+\s*fotos?\s*\d+€/i,
+  /\d+\s*min\s*\d+€/i,
+  /1\s*foto\s*7€/i,
+  /sexting\s*5[\/\s]*10[\/\s]*15\s*min/i,
+  /videollamada\s*4€[\/\s]*min/i,
+  /packs?\s*desde\s*\d+€/i,
+];
+
+/**
+ * Strip any line containing a catalog-row pattern. Operates line-by-line
+ * (split on newline) so we keep the surrounding flirty/coquettish text.
+ * Lines that become empty after pattern removal are dropped entirely.
+ *
+ * Exported for unit testing.
+ *
+ * @param {string} text
+ * @returns {{ sanitized: string, stripped: string[] }}
+ */
+export function sanitizeCatalogRepeats(text) {
+  if (!text || typeof text !== 'string') return { sanitized: text || '', stripped: [] };
+  const stripped = [];
+  const lines = text.split(/\r?\n/);
+  const kept = [];
+  for (const line of lines) {
+    const matched = CATALOG_REPEAT_PATTERNS.some((rx) => rx.test(line));
+    if (matched) {
+      stripped.push(line.trim());
+      continue;
+    }
+    kept.push(line);
+  }
+  // Collapse 3+ blank lines to 2, trim outer whitespace.
+  const sanitized = kept.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return { sanitized, stripped };
+}
+
+const CATALOG_REGEN_INSTRUCTION =
+  'No escribas precios ni catálogo (el cliente ya lo vio antes en este chat). ' +
+  'Responde SOLO coqueteo en 1-2 frases cortas, sin enumerar productos ni cifras.';
+
+/**
  * Builds the system prompt from persona.md + client context.
  * Exported for unit testing.
  *
@@ -99,10 +148,64 @@ export async function runPersona(message, history = [], client = {}, intent = 's
   });
 
   // Strip leaked role markers that some models prepend (e.g. "Assistant: hola")
-  const cleaned = (response || '')
+  let cleaned = (response || '')
     .replace(/^(Assistant|Human|User|Alba|Cliente)\s*:\s*/i, '')
     .replace(/^#+\s+\S.*\n?/m, '') // strip stray markdown headers
     .trim();
+
+  // ─── BUG #2 v2 — deterministic post-processing ───────────────────────────
+  // If the client has already been shown the catalog at least once, strip any
+  // repeated catalog rows (the orchestrator emits the catalog as a separate
+  // fragment; repetition causes visible duplication for the client).
+  // If the sanitized output is too short to be a usable response, regenerate
+  // ONCE with an explicit instruction. Otherwise log + ship sanitized.
+  if (client?.has_seen_catalog === true) {
+    const { sanitized, stripped } = sanitizeCatalogRepeats(cleaned);
+    if (stripped.length > 0) {
+      log.warn({
+        intent,
+        client_id: client.id,
+        stripped_count: stripped.length,
+        stripped_preview: stripped.slice(0, 3),
+        original_length: cleaned.length,
+        sanitized_length: sanitized.length,
+      }, 'persona post-process: stripped catalog repeats');
+    }
+
+    // Only consider regenerating when we actually stripped something AND the
+    // result is now too short to be a usable response. Short outputs that were
+    // never modified are legitimate (e.g. "hola q tal") and should not trigger
+    // a regeneration.
+    if (stripped.length > 0 && sanitized.length < 15) {
+      // Regenerate ONCE with a reinforced instruction. We do not loop — if
+      // the second attempt is also too short, we ship whatever we get.
+      log.warn({
+        intent,
+        client_id: client.id,
+        sanitized_length: sanitized.length,
+      }, 'persona post-process: sanitized output too short, regenerating once');
+
+      const regenSystem =
+        `<INSTRUCCION_PRIORITARIA>\n${CATALOG_REGEN_INSTRUCTION}\n</INSTRUCCION_PRIORITARIA>\n\n${systemPrompt}`;
+      const regenResponse = await callOpenRouter({
+        model: env.MODEL_PERSONA,
+        messages: [{ role: 'system', content: regenSystem }, ...messages],
+        temperature: 0.75,
+        maxTokens: 200,
+        stop: ['\n\n\n', 'Cliente:', 'Alba:', 'User:', 'Assistant:', 'Human:'],
+        agent: 'persona',
+      });
+      const regenCleaned = (regenResponse || '')
+        .replace(/^(Assistant|Human|User|Alba|Cliente)\s*:\s*/i, '')
+        .replace(/^#+\s+\S.*\n?/m, '')
+        .trim();
+      const regenSanitized = sanitizeCatalogRepeats(regenCleaned).sanitized;
+      cleaned = regenSanitized || regenCleaned || sanitized;
+    } else if (stripped.length > 0) {
+      cleaned = sanitized;
+    }
+    // else: nothing stripped → keep original cleaned text untouched.
+  }
 
   log.info({
     intent,

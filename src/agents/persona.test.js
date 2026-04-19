@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildSystemPrompt, runPersona } from './persona.js';
+import { buildSystemPrompt, runPersona, sanitizeCatalogRepeats, CATALOG_REPEAT_PATTERNS } from './persona.js';
 
 vi.mock('../lib/llm-client.js', () => ({
   callAnthropic: vi.fn(),
@@ -168,5 +168,136 @@ describe('runPersona', () => {
     callOpenRouter.mockResolvedValue('ok');
     await runPersona('test', [], {}, 'small_talk');
     expect(callOpenRouter).toHaveBeenCalledWith(expect.objectContaining({ maxTokens: 200 }));
+  });
+});
+
+// ─── BUG #2 v2 — deterministic post-processing ───────────────────────────
+describe('sanitizeCatalogRepeats (pure function)', () => {
+  it('returns input unchanged when no patterns match', () => {
+    const { sanitized, stripped } = sanitizeCatalogRepeats('hola bebe que tal');
+    expect(sanitized).toBe('hola bebe que tal');
+    expect(stripped).toEqual([]);
+  });
+
+  it('strips a single "1 foto 7€" line', () => {
+    const { sanitized, stripped } = sanitizeCatalogRepeats('hola bebe\n1 foto 7€\nque haces');
+    expect(sanitized).toBe('hola bebe\nque haces');
+    expect(stripped).toHaveLength(1);
+  });
+
+  it('strips "2 fotos 12€" line', () => {
+    const { sanitized, stripped } = sanitizeCatalogRepeats('te tengo:\n2 fotos 12€\nbebe');
+    expect(sanitized).not.toContain('2 fotos 12€');
+    expect(stripped.length).toBeGreaterThan(0);
+  });
+
+  it('strips "sexting 5/10/15 min" line variants', () => {
+    expect(sanitizeCatalogRepeats('sexting 5/10/15 min').sanitized).toBe('');
+    expect(sanitizeCatalogRepeats('sexting 5 10 15 min').sanitized).toBe('');
+  });
+
+  it('strips "videollamada 4€/min"', () => {
+    const { sanitized } = sanitizeCatalogRepeats('algo\nvideollamada 4€/min\nfin');
+    expect(sanitized).toBe('algo\nfin');
+  });
+
+  it('strips "5 min 25€" minute pricing rows', () => {
+    const { sanitized } = sanitizeCatalogRepeats('top\n5 min 25€\n10 min 45€\nbottom');
+    expect(sanitized).toBe('top\nbottom');
+  });
+
+  it('strips "packs desde 30€"', () => {
+    const { sanitized } = sanitizeCatalogRepeats('mira\npacks desde 30€\nbebe');
+    expect(sanitized).toBe('mira\nbebe');
+  });
+
+  it('strips multiple matching lines at once', () => {
+    const input = 'mira lo que tengo:\n1 foto 7€\n2 fotos 12€\nsexting 5/10/15 min\nque te apetece';
+    const { sanitized, stripped } = sanitizeCatalogRepeats(input);
+    expect(sanitized).toBe('mira lo que tengo:\nque te apetece');
+    expect(stripped).toHaveLength(3);
+  });
+
+  it('handles null/empty/non-string input safely', () => {
+    expect(sanitizeCatalogRepeats(null).sanitized).toBe('');
+    expect(sanitizeCatalogRepeats('').sanitized).toBe('');
+    expect(sanitizeCatalogRepeats(undefined).sanitized).toBe('');
+  });
+
+  it('collapses 3+ blank lines that result from stripping', () => {
+    const { sanitized } = sanitizeCatalogRepeats('hola\n1 foto 7€\n2 fotos 12€\n\nfin');
+    expect(sanitized).not.toMatch(/\n{3,}/);
+  });
+
+  it('exposes CATALOG_REPEAT_PATTERNS as an array of RegExps', () => {
+    expect(Array.isArray(CATALOG_REPEAT_PATTERNS)).toBe(true);
+    expect(CATALOG_REPEAT_PATTERNS.length).toBeGreaterThan(0);
+    CATALOG_REPEAT_PATTERNS.forEach((rx) => expect(rx).toBeInstanceOf(RegExp));
+  });
+});
+
+describe('runPersona — anti-catalog-repeat post-processing (BUG #2 v2)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('does NOT sanitize when client.has_seen_catalog is false', async () => {
+    callOpenRouter.mockResolvedValue('mira: 1 foto 7€\nque te apetece bebe');
+    const result = await runPersona('hola', [], { has_seen_catalog: false }, 'small_talk');
+    expect(result).toContain('1 foto 7€');
+    expect(callOpenRouter).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT sanitize when client field is undefined', async () => {
+    callOpenRouter.mockResolvedValue('mira: 1 foto 7€\nque te apetece bebe');
+    const result = await runPersona('hola', [], {}, 'small_talk');
+    expect(result).toContain('1 foto 7€');
+    expect(callOpenRouter).toHaveBeenCalledTimes(1);
+  });
+
+  it('strips catalog rows when has_seen_catalog=true and ships sanitized', async () => {
+    callOpenRouter.mockResolvedValue('mira lo que tengo:\n1 foto 7€\n2 fotos 12€\nque te apetece bebe');
+    const result = await runPersona('hola', [], { id: 1, has_seen_catalog: true }, 'small_talk');
+    expect(result).not.toContain('1 foto 7€');
+    expect(result).not.toContain('2 fotos 12€');
+    expect(result).toContain('que te apetece bebe');
+    expect(callOpenRouter).toHaveBeenCalledTimes(1); // no regen
+  });
+
+  it('regenerates ONCE when sanitized output < 15 chars', async () => {
+    callOpenRouter
+      .mockResolvedValueOnce('1 foto 7€\n2 fotos 12€') // sanitized → ''
+      .mockResolvedValueOnce('jajaja que loco eres bebe');
+    const result = await runPersona('hola', [], { id: 1, has_seen_catalog: true }, 'small_talk');
+    expect(callOpenRouter).toHaveBeenCalledTimes(2);
+    expect(result).toBe('jajaja que loco eres bebe');
+  });
+
+  it('regen call carries explicit no-catalog instruction in system prompt', async () => {
+    callOpenRouter
+      .mockResolvedValueOnce('1 foto 7€')
+      .mockResolvedValueOnce('vale bebe');
+    await runPersona('hola', [], { id: 1, has_seen_catalog: true }, 'small_talk');
+    const regenCall = callOpenRouter.mock.calls[1][0];
+    const sys = regenCall.messages.find((m) => m.role === 'system').content;
+    expect(sys).toContain('<INSTRUCCION_PRIORITARIA>');
+    expect(sys).toMatch(/precios.*cat[aá]logo|cat[aá]logo.*precios/i);
+  });
+
+  it('does NOT loop infinitely if regen also returns short output', async () => {
+    callOpenRouter
+      .mockResolvedValueOnce('1 foto 7€')
+      .mockResolvedValueOnce('1 foto 7€'); // also sanitizes to ''
+    const result = await runPersona('hola', [], { id: 1, has_seen_catalog: true }, 'small_talk');
+    expect(callOpenRouter).toHaveBeenCalledTimes(2); // regen ONCE, not more
+    // Result is whatever survives — empty string fallback acceptable; no throw
+    expect(typeof result).toBe('string');
+  });
+
+  it('ships sanitized when above threshold even if some lines stripped', async () => {
+    callOpenRouter.mockResolvedValue('hola bebe que tal estas hoy\n1 foto 7€\nme apetece hablar contigo');
+    const result = await runPersona('hola', [], { id: 1, has_seen_catalog: true }, 'small_talk');
+    expect(callOpenRouter).toHaveBeenCalledTimes(1);
+    expect(result).toContain('hola bebe que tal');
+    expect(result).toContain('me apetece hablar');
+    expect(result).not.toContain('1 foto 7€');
   });
 });
