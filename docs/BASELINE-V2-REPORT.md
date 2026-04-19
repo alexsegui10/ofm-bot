@@ -1,6 +1,6 @@
 # BASELINE V2 — Report
 
-**Fecha:** 2026-04-19 (re-run tras BUG A/B/C)
+**Fecha:** 2026-04-19 (re-run tras FIX 1-4 + recarga créditos OpenRouter)
 **Comando:** `node scripts/auto-iterate.js --mode=baseline --scenarios-v2`
 **Dataset:** `scripts/scenarios-v2.js` — 34 escenarios P1
 **Modelos activos:**
@@ -11,24 +11,46 @@
 
 ## Resumen ejecutivo
 
-- **Pasaron: 10 / 34 (29.4%)** — vs **4 / 34 (11.7%) en baseline anterior (2026-04-18)**
+- **Pasaron: 10 / 34 (29.4%)** — mismo conteo que el baseline anterior (10/34) pero **set distinto**
 - Fallaron: 24 / 34
-- **Ganancia neta: +6** (ganamos 7: A1, B2, D6, D7, D9, F1, F4 · perdimos 1: D4)
+- **Delta neto: 0** (ganamos 4: C2, D2, F2, G6 · perdimos 4: A1, D6, F1, F4)
 
-Este baseline se ejecuta TRAS los 3 fixes de la ronda BUG A/B/C:
-- **BUG A:** Router prompt restructurado con PRIORIDAD MÁXIMA para v2 intents + extracción de params (tag/count/product_id/template_id)
-- **BUG B:** `buildSextingV2Instruction` reforzado con reglas explícitas (no preguntar, no confirmar imágenes, dirigir el guion). Instrucción inyectada como PREFIJO `<INSTRUCCION_PRIORITARIA>` en system prompt de Persona. Historia reciente pasada a runPersona durante v2 active turn
-- **BUG C:** Helpers `assistantHasShownCatalog()` + `clientExplicitlyAsksCatalog()` para suprimir re-emisión automática de catálogo y category-detail en turnos 2+ a menos que el cliente lo pida
+Este baseline se ejecuta TRAS los 4 FIX commits (A1, D6, D9, F1) +
+recarga de créditos OpenRouter. El commit que originó este re-run venía
+de arreglar regresiones provocadas por la iteración BUG A/B/C.
 
-Target era 18+/34: NO alcanzado, pero tendencia clara de mejora (+150% en pasajes).
+**Resultado frente a los 4 tests objetivo del FIX:**
+- **A1** — ❌ FAIL (era PASS tras BUG A/B/C). El FIX 1 no ha sostenido el
+  pase. Evaluador reporta: fragmento [5] "dime qué te mola rey 🔥"
+  considerado pregunta vacía porque el catálogo en [2][3][4] no
+  acompaña a la pregunta en el mismo contexto inmediato según §6.
+- **D6** — ❌ FAIL (igual que antes del FIX). Alba responde "claro q soy
+  yo / no me crees?" en vez del cambio de tema prescrito por §H.
+- **D9** — ✅ PASS (se mantiene).
+- **F1** — ❌ FAIL (era PASS tras BUG A/B/C). Turno 5 duplica warm_up
+  ("recostada en el sofá" vs "en la cama") y el intent=media no lleva
+  media real asociada.
+
+Además aparecen **2 regresiones nuevas** no previstas:
+- **F4** — pasaba antes, ahora falla porque Alba manda link de crypto
+  cuando el cliente dice "bizum, ya pague" (mismo bug de método de pago
+  que afecta a A3/A4/A5/H3).
+
+Y **4 ganancias limpias**:
+- **C2** (edad/origen): short-circuit determinista arrancó bien
+- **D2** (negocia precio directo): Sales Agent mantiene línea
+- **F2** (sexting roleplay profe): F2 pasó por primera vez — el bridge
+  post-pago ahora engancha a v2 aunque el rol se especifique tras
+  payment_confirmation
+- **G6** (pago falla): flujo de error nuevo bien gestionado
 
 ---
 
 ## Resultados por escenario
 
-| ID | Grupo | Título | Veredicto | Δ vs 2026-04-18 |
+| ID | Grupo | Título | Veredicto | Δ vs baseline anterior |
 |---|---|---|---|---|
-| A1 | A | Cliente saluda simple | **PASS** | **↑ (era FAIL)** |
+| A1 | A | Cliente saluda simple | FAIL | **↓ (era PASS)** |
 | A2 | A | Cliente saluda con pregunta personal | FAIL | = |
 | A3 | A | Cliente compra 2 fotos sueltas (precio escalonado v2) | FAIL | = |
 | A4 | A | Cliente pide video concreto del catálogo (v_001) | FAIL | = |
@@ -36,29 +58,29 @@ Target era 18+/34: NO alcanzado, pero tendencia clara de mejora (+150% en pasaje
 | A6 | A | Cliente pide videollamada | FAIL | = |
 | A7 | A | Cliente pregunta si es seguro pagar por bizum | FAIL | = |
 | B1 | B | Pregunta por detalle de fotos | FAIL | = |
-| B2 | B | Pregunta por lista de videos (v2 intent: ask_video_list) | **PASS** | **↑ (era FAIL)** |
+| B2 | B | Pregunta por lista de videos (v2 intent: ask_video_list) | **PASS** | = |
 | B3 | B | Cambia de opinión entre categorías | FAIL | = |
 | B4 | B | Pregunta si tiene algo específico que SÍ existe | FAIL | = |
 | B5 | B | Cliente pide algo que NO hay | FAIL | = |
 | C1 | C | Cliente quiere charlar antes de comprar | FAIL | = |
-| C2 | C | Cliente pregunta edad y origen | FAIL | = |
+| C2 | C | Cliente pregunta edad y origen | **PASS** | **↑ (era FAIL)** |
 | C3 | C | Cliente pregunta qué estudia | FAIL | = |
 | D1 | D | Cliente pide GRATIS | **PASS** | = |
-| D2 | D | Cliente negocia precio directamente | FAIL | = |
+| D2 | D | Cliente negocia precio directamente | **PASS** | **↑ (era FAIL)** |
 | D3 | D | Cliente duda con el precio de un video | FAIL | = |
-| D4 | D | Cliente acosador leve | FAIL | **↓ (era PASS)** |
+| D4 | D | Cliente acosador leve | FAIL | = |
 | D5 | D | Cliente acosador fuerte | **PASS** | = |
-| D6 | D | Cliente sospecha que es bot | **PASS** | **↑ (era FAIL)** |
-| D7 | D | Cliente pregunta si puede quedar | **PASS** | **↑ (era FAIL)** |
+| D6 | D | Cliente sospecha que es bot | FAIL | **↓ (era PASS)** |
+| D7 | D | Cliente pregunta si puede quedar | **PASS** | = |
 | D8 | D | Cliente insiste emocionalmente sin comprar | FAIL | = |
-| D9 | D | Cliente compara precios con otras modelos | **PASS** | **↑ (era FAIL)** |
-| F1 | F | Sexting estándar sin roleplay (st_5min) | **PASS** | **↑ (era FAIL)** |
-| F2 | F | Sexting con roleplay (profe) — plantilla 10 min | FAIL | = |
+| D9 | D | Cliente compara precios con otras modelos | **PASS** | = |
+| F1 | F | Sexting estándar sin roleplay (st_5min) | FAIL | **↓ (era PASS)** |
+| F2 | F | Sexting con roleplay (profe) — plantilla 10 min | **PASS** | **↑ (era FAIL)** |
 | F3 | F | Cliente en sexting manda foto suya | FAIL | = |
-| F4 | F | Cliente intenta alargar sexting gratis | **PASS** | **↑ (era FAIL)** |
+| F4 | F | Cliente intenta alargar sexting gratis | FAIL | **↓ (era PASS)** |
 | G1 | G | Cliente manda múltiples mensajes seguidos (Pacer) | FAIL | = |
 | G5 | G | Cliente pregunta por PayPal | **PASS** | = |
-| G6 | G | Cliente paga pero el pago falla | FAIL | = |
+| G6 | G | Cliente paga pero el pago falla | **PASS** | **↑ (era FAIL)** |
 | H1 | H | Cliente pide un video por TÍTULO concreto | FAIL | = |
 | H2 | H | Cliente pide 4 fotos de tetas (precio escalonado) | FAIL | = |
 | H3 | H | Sexting 15 min con roleplay (doctora) + cool_down | FAIL | = |
@@ -67,71 +89,79 @@ Target era 18+/34: NO alcanzado, pero tendencia clara de mejora (+150% en pasaje
 
 ## Por grupo
 
-| Grupo | Pasan / Total | % | vs 2026-04-18 |
+| Grupo | Pasan / Total | % | vs baseline anterior |
 |---|---|---|---|
-| A — Saludo / inicio | 1/7 | 14% | ↑ (era 0/7) |
-| B — Catálogo / preguntas | 1/5 | 20% | ↑ (era 0/5) |
-| C — Small talk / personal | 0/3 | 0% | = (era 0/3) |
-| D — Difíciles | 5/9 | 56% | ↑ (era 3/9) |
-| F — Sexting | 2/4 | 50% | ↑↑ (era 0/4) — recuperación parcial de F1/F4 tras BUG B |
-| G — Edge cases | 1/3 | 33% | = (era 1/3) |
-| H — Nuevos v2 | 0/3 | 0% | = (era 0/3) |
+| A — Saludo / inicio | 0/7 | 0% | ↓ (era 1/7) |
+| B — Catálogo / preguntas | 1/5 | 20% | = |
+| C — Small talk / personal | 1/3 | 33% | ↑ (era 0/3) |
+| D — Difíciles | 5/9 | 56% | = |
+| F — Sexting | 1/4 | 25% | ↓ (era 2/4) |
+| G — Edge cases | 2/3 | 67% | ↑ (era 1/3) |
+| H — Nuevos v2 | 0/3 | 0% | = |
 
 ---
 
-## Causas raíz pendientes (no resueltas por BUG A/B/C)
+## Causas raíz — regresiones nuevas
 
-### 1. F2/F3 sexting v2 con roleplay sigue roto
+### 1. A1 — pregunta vacía tras catálogo en la misma ráfaga
 
-- **F2:** Alba dijo "son 30€" sin esperar método de pago. Tras pagar, sigue
-  preguntando "qué necesitas que te enseñe" en lugar de arrancar el guion
-  como profe → BUG B no llega a inyectar la instrucción porque la sesión v2
-  todavía no está activa cuando llega el turno con roleplay (el bridge se
-  engancha en payment_confirmation pero el cliente especifica el rol DESPUÉS
-  del pago, en el siguiente turno; el fragmento "qué necesitas" sale antes
-  de que getActiveV2SessionForClient devuelva true).
-- **F3:** Aunque BUG B prohíbe "ya lo vi", el escenario falla por una
-  pregunta vacía "qué te apetece imaginar conmigo?" — la instrucción de
-  "TÚ DIRIGES" llega pero Persona la ignora cuando recibe una foto en
-  mitad de sexting (el branch `hasMedia` del orquestador inyecta otra
-  instruction y sobreescribe la del conductor v2).
+El evaluador aplica §6 estrictamente: si el último fragmento de la ráfaga
+es una pregunta abierta ("dime qué te mola rey 🔥"), aunque los
+fragmentos previos [2][3][4] incluyan el catálogo, cuenta como vacía
+porque las opciones no acompañan a la pregunta en el mismo contexto
+inmediato. El FIX 1 no cubrió este edge case.
 
-### 2. H1/H2/A3/A4 — precio inventado (7€ por defecto)
+### 2. F1 — warm_up duplicado + media sin payload
 
-A pesar del BUG A (Router devuelve params), los logs muestran que en H1/H2
-el flujo cae a la rama legacy `resolveProduct(...)` cuando el cliente
-responde "crypto" sin nombrar el producto otra vez (se pierde el
-`pending_product_id`). FIX 2 (T2) persiste pending_product_id pero
-`payment_method_selection` lo lee y aún así re-resuelve por keyword.
+Turno 5 genera dos fragmentos ("recostada en el sofá" / "en la cama")
+que son variantes del mismo mensaje, y uno lleva `intent=media` sin
+adjunto real. El sexting conductor v2 está emitiendo kickoff pero el
+Persona lo está doblando por algún branch previo al conductor.
 
-### 3. A5/A6/A7 — flujos de sexting/videollamada/seguridad no v2
+### 3. F4 — bizum → crypto mismatch (mismo bug familia A3/A4/A5/H3)
 
-Los escenarios A5 (sexting), A6 (videollamada), A7 (seguridad bizum) caen
-fuera de v2 (siguen el path legacy `sexting_request` / `videocall_request`).
-Sales Agent no termina de cerrar la operación. Requiere trabajo
-independiente sobre `runSales` + plantillas.
+Cliente dice "ya pague" (bizum) y Alba genera nuevo link de crypto
+porque `pending_product_id` no incluye método de pago elegido, o lo
+pierde. Este bug es la CAUSA RAÍZ más repetida del baseline:
+afecta a A3, A4, A5, F4, H3 (5/34 = 14.7% de los escenarios).
 
-### 4. C2/C3 — Persona alucina datos personales
+---
 
-Persistente desde el baseline anterior. El prompt de Persona tiene reglas
-("PROHIBIDO mencionar Complutense") pero el modelo las ignora cuando el
-cliente pregunta directamente por estudios/origen. Necesita endurecimiento
-de Quality Gate o un short-circuit determinista para preguntas personales.
+## Causas raíz — persistentes (no resueltas)
 
-### 5. G1 — Pacer + repetición de catálogo
+### 1. Método de pago por defecto = crypto (afecta A3/A4/A5/F4/H3)
 
-Aunque BUG C suprime la re-inyección automática de catálogo, G1 sigue
-fallando porque Persona LITERALMENTE re-emite la lista en el TEXTO de
-respuesta (no en el append). El conductor de Persona necesita una
-instrucción anti-repetición más fuerte cuando detecta que el cliente está
-en modo "rafagueo".
+Todavía no implementado el fix de `payment_method_selection` que lea
+`pending_product_id` sin re-resolver por keyword. Máxima prioridad: un
+solo fix podría sacar 5 escenarios del FAIL a PASS.
 
-### 6. D4 — regresión mínima (tono)
+### 2. Pregunta vacía sin opciones (afecta B1/B3/B4/D4/G1/H1)
 
-D4 (acosador leve) pasó antes pero ahora falla por evaluación más
-estricta del tono ("un poco de respeto vale?" suena demasiado seria) +
-fragmentación excesiva. No es regresión causada por BUG A/B/C — es
-inestabilidad del juez evaluador entre runs.
+Quality Gate no detecta cuando Alba pregunta sin acompañar opciones.
+Persona sigue emitiendo "qué te apetece ver?" sin tags en la misma
+ráfaga.
+
+### 3. D6 — defensa ante "eres un bot"
+
+Alba responde "claro q soy yo / no me crees?" cuando la regla §H exige
+cambio de tema inmediato ("jajaja q dices bebe, demasiado caliente
+para ser bot 😏"). Requiere short-circuit determinista o refuerzo en
+el prompt de Persona.
+
+### 4. A6/A7 — flujos videollamada y seguridad bizum
+
+Sin Sales Agent cerrando la operación. Alba dice "miro agenda" sin dar
+precio ni condiciones (4€/min, mínimo 5 min).
+
+### 5. H2 — precio escalonado mal calculado
+
+Cobra 19€ por 4 fotos cuando `PHOTO_PRICE_TABLE` indica 18€.
+Persona inventa el precio en vez de leer la tabla.
+
+### 6. C3 — evasión sobre estudios
+
+Alba dice "de una carrera por aquí" cuando el escenario espera "sí bebe,
+ADE". Short-circuit determinista para C2 funcionó; C3 aún requiere fix.
 
 ---
 
@@ -139,30 +169,45 @@ inestabilidad del juez evaluador entre runs.
 
 | Tipo | Ocurrencias |
 |---|---|
-| B (no respondió) | ~17 escenarios |
-| C (pregunta vacía) | ~12 escenarios |
-| D (repitió info) | ~10 escenarios |
-| E (inventó precio/contenido) | ~9 escenarios |
-| I (flujo no avanza) | ~9 escenarios |
-| F (tono/fragmentación) | ~3 escenarios |
+| B (no respondió) | ~18 escenarios |
+| C (pregunta vacía) | ~11 escenarios |
+| D (repitió info) | ~11 escenarios |
+| E (inventó precio/contenido) | ~8 escenarios |
+| I (flujo no avanza) | ~8 escenarios |
+| F (tono/fragmentación) | ~5 escenarios |
+
+---
+
+## Diagnóstico
+
+**Este baseline revela que los 4 FIX commits (A1/D6/D9/F1) no son
+estables:**
+- Solo D9 se mantiene en verde.
+- A1 y F1 volvieron a FAIL pese a tener commits dedicados.
+- D6 nunca llegó a pasar.
+- Y F4 regresionó sin estar cubierto por el FIX.
+
+La hipótesis más probable es que los FIX 1/3/4 sean **frágiles frente a
+la inestabilidad del evaluador** (juez LLM no determinista) y/o que el
+commit haya introducido side-effects en Persona (inconsistencia en
+emisión de catálogo + pregunta).
 
 ---
 
 ## Próximos pasos (pendientes de autorización del owner)
 
-1. **F2/F3:** mover el check `getActiveV2SessionForClient` también ANTES
-   de la rama `hasMedia`, y hacer que el bridge se enganche en cuanto
-   llegue el primer mensaje post-pago aunque el `payment_confirmation`
-   intent venga implícito.
-2. **H1/H2/A3/A4:** revisar `payment_method_selection` para que SIEMPRE
-   use `pending_product_id` cuando exista, sin re-resolver por keyword.
-3. **G1 (Pacer):** instrucción anti-repetición a Persona cuando detecta
-   que ya respondió con lista en el turno anterior.
-4. **C2/C3:** short-circuit determinista para preguntas personales tipo
-   "qué estudias / de dónde eres".
+1. **PAGO:** fix `payment_method_selection` — resuelve A3/A4/A5/F4/H3.
+2. **QUALITY GATE:** detector de "pregunta vacía sin opciones" como
+   hard-fail del Gate — resuelve B1/B3/B4/D4/G1/H1.
+3. **D6:** short-circuit determinista para "eres un bot" en el Router.
+4. **H2:** leer `PHOTO_PRICE_TABLE` desde Persona context (no inventar).
+5. **F1:** auditar la cadena Sexting Conductor v2 → Persona para evitar
+   warm_up duplicado y media sin payload.
+6. **A1/A2:** reglas de emisión de catálogo + pregunta en la MISMA
+   ráfaga (evaluador lo exige).
 
-> Aún por debajo del target 18+/34. Recomiendo iterar en F2/F3 y H1/H2
-> antes de lanzar el loop autónomo del Paso 9.
+> Fuzz: 3/20 sin cambios (ver FUZZ-REPORT.md). Baseline: 10/34 sin
+> cambios netos.
 
 ---
 

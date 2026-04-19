@@ -1,6 +1,6 @@
 # FUZZ REPORT v2
 
-Generado: 2026-04-19T09:04:03.724Z
+Generado: 2026-04-19T17:45:08.456Z
 Dataset: 20 perfiles de `scripts/fake-clients.json`
 
 ## Resumen
@@ -12,10 +12,10 @@ Dataset: 20 perfiles de `scripts/fake-clients.json`
 
 | arquetipo | pass | rate |
 |---|---|---|
-| tímido | 0/4 | 0% |
+| tímido | 1/4 | 25% |
 | directo | 0/4 | 0% |
 | regateador | 0/4 | 0% |
-| cariñoso | 3/3 | 100% |
+| cariñoso | 2/3 | 67% |
 | acosador leve | 0/4 | 0% |
 | exploratorio | 0/1 | 0% |
 
@@ -23,153 +23,152 @@ Dataset: 20 perfiles de `scripts/fake-clients.json`
 
 ### fc_001 — Marcos, 28, Madrid (tímido)
 - **target:** fotos
-- **primer turno:** "hola... no sé si esto funciona así jaja" → "jajaja relax bebe, claro q funciona
-tengo fotitos y videos, qué te interesa? 😈"
+- **primer turno:** "hola... no sé si esto funciona así jaja" → ""
 - **issues:**
-  - C. Pregunta vacía sin propuesta — En turno 1 y turno 3, Alba pregunta 'qué te interesa?' y 'qué buscas?' sin ofrecer opciones concretas (tags, precios, categorías). Según §4 y §7, estas son preguntas vacías prohibidas.
-  - B. No respondió a lo que preguntó el cliente — En turno 2, el cliente dice 'perdona si molesto, vi tu perfil y... bueno'. Alba solo dice 'no molestas guapo,' y corta. No responde al contexto emocional ni continúa la conversación de forma natural. Mensaje incompleto.
-  - B. No respondió a lo que preguntó el cliente — En turno 3, el cliente explícitamente dice 'quería preguntar por fotos'. Alba vuelve a preguntar genéricamente 'qué buscas?' en lugar de ofrecer opciones de FOTOS específicamente (tags disponibles, precios escalonados 1x7€, 2x12€, 3x15€).
-  - B. No respondió a lo que preguntó el cliente — En turno 4, el cliente dice 'es que nunca he hecho esto 😅' mostrando nerviosismo. Alba solo dice 'no te preocupes bebe,' sin continuar. Mensaje cortado a la mitad, no cierra la idea ni propone opciones.
+  - C - Pregunta vacía sin propuesta: en turno 4 Alba pregunta 'qué te gustaría ver?' sin ofrecer NINGUNA opción concreta (tags, categorías, precios, nada). Según §9.C y §2 del criterio, las preguntas deben ir SIEMPRE acompañadas de 2-3 opciones concretas.
+  - B - No respondió a lo que preguntó el cliente: en turno 3 el cliente menciona específicamente 'fotos', pero Alba en turno 4 hace pregunta genérica en vez de responder directamente con opciones de fotos (tags disponibles, precios escalonados 1/2/3 fotos).
 
 ### fc_002 — Rodrigo, 41, Ciudad de México (directo)
 - **target:** sexting
-- **primer turno:** "buenas, quiero sexting en tiempo real cuánto cobras por 30 min" → "hola guapo, me encanta que quieras eso 🔥 espera que te cuento los detalles"
+- **primer turno:** "buenas, quiero sexting en tiempo real cuánto cobras por 30 min" → "hola cariño, me encanta"
 - **issues:**
-  - B. No respondió a lo que preguntó el cliente — Turno 3: el cliente preguntó si Alba tiene hueco 'hoy en la noche' y Alba respondió 'me va perfecto cualquiera de las dos opciones' sin sentido lógico. No hay 'dos opciones' en contexto y no confirmó disponibilidad horaria.
-  - C. Pregunta vacía sin propuesta — Turno 1: Alba dice 'espera que te cuento los detalles' pero NO da ninguna propuesta concreta en ese fragmento. Aunque en turno 2 sí propone, el turno 1 queda como mensaje de relleno sin información útil.
-  - I. Flujo no avanza — Turno 3: la respuesta de Alba no hace avanzar la conversación. El cliente ya eligió duración implícita (30 min) y está preguntando por disponibilidad horaria. Alba debió clarificar que solo tiene duraciones 5/10/15 min (no 30) y preguntar cuál de esas tres quiere, o bien activar Human Handoff si el cliente insiste en 30 min exactos.
+  - B — No respondió a lo que el cliente preguntó. El cliente pidió 30 min de sexting y Alba solo ofreció 5/10/15 min sin reconocer explícitamente que no tiene esa opción.
+  - C — Pregunta vacía sin propuesta adaptada. Alba pregunta 'cuál te mola?' cuando el cliente ya especificó 30 min. Debería haber dicho algo como 'no tengo de 30 min bebe, tengo de 5, 10 o 15. o te hago 2 sesiones de 15 min si quieres 30'.
+  - F — Tono incorrecto: mensajes demasiado largos. El turno 3 tiene formato de lista con bullets (·), lo cual está PROHIBIDO explícitamente en §7 ('formato lista con bullets (•, -, *)').
+  - I — El flujo no avanza correctamente. Alba no reconoce la petición específica de 30 min del cliente ni ofrece alternativas creíbles, solo presenta opciones estándar ignorando lo que pidió.
 
 ### fc_003 — Toni, 23, Valencia (regateador)
 - **target:** videos
 - **primer turno:** "ey, cuanto cuestan los videos" → "holaa guapo,"
 - **issues:**
-  - B — No respondió a lo que preguntó el cliente (turno 1: cliente pregunta 'cuanto cuestan los videos', Alba saluda sin dar info)
-  - B — No respondió a lo que preguntó el cliente (turno 2: cliente compara precios de OnlyFans, Alba evade sin defender ni dar opciones concretas)
-  - B — No respondió a lo que preguntó el cliente (turno 3: cliente pide muestra gratis, Alba lista videos ignorando la petición)
-  - B — No respondió a lo que preguntó el cliente (turno 4: cliente insiste en muestra gratis, Alba sigue listando videos sin responder al pedido)
-  - B — No respondió a lo que preguntó el cliente (turno 5: cliente pregunta por descuento multi-compra, Alba lista más videos sin responder)
-  - C — Pregunta vacía sin propuesta (turno 2: 'dime qué te gusta y te cuento todo' sin opciones concretas previas)
-  - D — Repitió información ya dada (turno 5: sigue listando videos cuando ya dio 4 en turnos 3-4)
+  - B. No respondió a lo que preguntó el cliente — Turno 1: cliente pregunta 'cuanto cuestan los videos' y Alba solo saluda sin dar precio ni catálogo
+  - B. No respondió a lo que preguntó el cliente — Turno 2: cliente compara precios con OnlyFans y Alba no defiende ni justifica, solo pregunta qué quiere
+  - B. No respondió a lo que preguntó el cliente — Turno 4: cliente pide muestra gratis y Alba ignora completamente, solo sigue listando videos
+  - B. No respondió a lo que preguntó el cliente — Turno 5: cliente pregunta por descuento en pack y Alba ignora, solo añade otro video
+  - D. Repitió información — Turno 3 y 4: Alba lista videos de forma fragmentada sin razón (debería haber dado lista completa en turno 3)
+  - D. Repitió información — Turno 5: Alba añade 'squirt fuerte con dildo' cuando en turno 3 ya había 'squirt en la ducha' (contenido redundante sin aclarar diferencia)
 
 ### fc_005 — Iván, 31, Bilbao (acosador leve)
 - **target:** videollamada
-- **primer turno:** "hola" → "holaa guapo, cómo estás? 😈"
+- **primer turno:** "hola" → "holaa de nuevo, ya estoy aquí, q tal estás? 😈"
 - **issues:**
-  - F - Tono incorrecto: mensaje [2] del Turno 4 truncado ('son 4€/min bebe,') sin acabar correctamente
-  - F - Tono incorrecto: mensajes partidos sin coherencia temporal (Turno 5 continúa mensaje del Turno 4 después de que el cliente ya respondió)
-  - I - Flujo no avanza: en Turno 5 Alba dice 'mínimo 5 min' DESPUÉS de que el cliente ya expresó frustración por 20 min de espera, genera confusión total sobre si habla de tiempo de videollamada o tiempo de espera
-  - B - No respondió a lo que preguntó: en Turno 6 el cliente expresa frustración legítima ('20 min esperando') y Alba responde con 'espera que me ha llegado algo' sin reconocer su queja ni disculparse
+  - E. Inventó contenido o precio no existente — En turno 5 dice 'son 4€/min bebe', cuando según §15 videollamada NO se vende por minuto sino por SESIÓN (pricing.json define sesiones de 5min, 10min, etc. con precios fijos)
+  - A. Frase prohibida presente — Turno 5: '4€/min' es modelo antiguo explícitamente prohibido en §16 ('cuántos minutos quieres de video' — misma razón: productos son piezas individuales)
+  - B. No respondió a lo que preguntó el cliente — Turnos 2-4: cliente dice 'no me lees o qué' y 'llevo 20 min esperando respuesta', Alba NO reconoce el problema de timing ni pide disculpas, solo sigue con respuestas genéricas ('qué pasa, cómo estás?'). En turno 4 cliente dice 'solo quiero saber si haces videollamadas' y Alba responde en turno 5 'mmm videollamadas me interesan' + precio, pero ignora completamente la queja de los 20 minutos
+  - I. Flujo no avanza — Turnos 1-4: cliente pregunta algo concreto (videollamadas) en turno 4, pero Alba tarda 4 turnos en dar respuesta útil, con mensajes vacíos intermedios ('holaa de nuevo', 'eyy guapo', 'qué pasa')
 
 ### fc_006 — Marcos, 28, Madrid (tímido)
 - **target:** fotos
-- **primer turno:** "hola, buenas" → "eyy q tal guapo,"
+- **primer turno:** "hola, buenas" → "hola guapo, qué tal estás? 😈 cómo te llamas?"
 - **issues:**
-  - B. No respondió a lo que preguntó el cliente — Turno 2: cliente preguntó por 'contenido de Alba' y Alba responde 'cómo te llamas?', ignorando la pregunta real
-  - B. No respondió a lo que preguntó el cliente — Turno 3: cliente dice 'no sé cómo funciona esto' y Alba responde 'estás en el sitio correcto' sin explicar nada ni presentar catálogo
-  - C. Pregunta vacía sin propuesta — Turno 4: Alba pregunta 'qué te apetece ver?' sin dar opciones concretas en ESE mensaje (aunque las da en turno 5, debió hacerlo inmediatamente)
-  - I. Flujo no avanza — Turnos 2-4: Alba tarda 3 turnos en presentar opciones reales, el cliente ya mostró intención clara ('ver contenido', 'fotos') desde turno 2 y no se avanzó hasta turno 5
+  - C - Pregunta vacía sin propuesta: En turno 4, Alba pregunta 'qué te gustaría ver?' sin ofrecer opciones concretas en ESE MISMO mensaje. Según §9.C y §7 (frases prohibidas), toda pregunta debe ir acompañada de 2-3 opciones. El catálogo llega recién en turno 5, que es un mensaje SEPARADO.
+  - E - No sigue protocolo de catálogo automático: Según §4 'Flujo paso a paso', cuando un cliente saluda (turno 1), Alba debe responder con saludo breve Y catálogo en mensaje separado AUTOMÁTICO. Aquí el catálogo no apareció hasta turno 5, después de que el cliente preguntara explícitamente por fotos.
 
 ### fc_007 — Rodrigo, 41, Guadalajara MX (directo)
 - **target:** sexting
-- **primer turno:** "cuánto cuesta el sexting con alba" → "hola rey,"
+- **primer turno:** "cuánto cuesta el sexting con alba" → "hola amor,"
 - **issues:**
-  - B - No respondió a lo que preguntó el cliente (turno 1): cliente pregunta 'cuánto cuesta el sexting con alba' y Alba solo saluda sin dar precio ni catálogo de sexting
-  - C - Pregunta vacía sin propuesta (turno 2): Alba dice 'espera un momentito q te doy toda la info' pero NO da ninguna info concreta de qué ofrece ni opciones, solo promete darla después
-  - I - Flujo no avanza (turno 2): después de 2 turnos sigue sin dar catálogo ni opciones concretas de sexting que el cliente pidió explícitamente en turno 1
+  - B. No respondió a lo que preguntó el cliente — Turno 1: cliente pregunta 'cuánto cuesta el sexting', Alba solo saluda sin responder al precio
+  - D. Repitió información ya dada — Turno 3: Alba manda el listado de precios sexting que ya había empezado en turno 2 (fragmento [2] 'tengo 3 opciones:')
+  - Fragmentación incorrecta — El turno 2 está partido en dos fragmentos cuando debería ser uno solo (regla de evaluación por ráfaga). Alba dice 'te cuento todo' pero no lo cuenta en ese turno, lo cuenta en el siguiente, rompiendo la coherencia
 
 ### fc_008 — Toni, 23, Valencia (regateador)
 - **target:** videos
-- **primer turno:** "ey qué hay" → "holaa guapo, cómo estás? 😈"
+- **primer turno:** "ey qué hay" → "holaa cariño, q tal estás? 😈"
 - **issues:**
-  - B. No respondió a lo que preguntó el cliente — Turno 2: cliente pregunta 'a cuánto están los vídeos' y Alba responde 'depende de lo q busques' sin dar NINGUNA opción concreta de videos ni precios. Debió listar productos reales de products.json o al menos dar rango de precios.
-  - C. Pregunta vacía sin propuesta — Turno 3: Alba dice 'dime qué te apetece y te paso los detalles' sin proponer NINGUNA opción concreta de videos. No hay lista de productos, no hay precios, no hay tags. Es pregunta vacía prohibida.
-  - I. Flujo no avanza — Tras 6 turnos el cliente pregunta por videos 3 veces y Alba NUNCA le enseña catálogo concreto ni lista de productos. El flujo está estancado en evasivas sin avanzar hacia mostrar qué hay disponible.
+  - B. No respondió a lo que preguntó el cliente — Turno 2: cliente pregunta 'a cuánto están los vídeos' esperando rango de precios general, Alba responde con pregunta genérica sin dar información de precios
+  - C. Pregunta vacía sin propuesta — Turno 2: Alba pregunta 'dime qué te apetece' sin ofrecer ninguna opción concreta (categorías, títulos, rango de precios)
+  - D. Repitió información ya dada — Turno 3-5: Alba envía videos en ráfagas sucesivas sin que el cliente pida más. Turno 3 envía 2 videos, Turno 4 envía 3 más, Turno 5 envía 1 más. Cliente está regateando/pidiendo descuento, no pidiendo más catálogo
+  - I. Flujo no avanza — Turnos 2-6: tras 5 intercambios el cliente sigue sin elegir producto concreto ni método de pago. Alba bombardea con catálogo cuando cliente claramente busca negociar precio, no avanza hacia cierre
 
 ### fc_010 — Iker, 31, Bilbao (acosador leve)
 - **target:** personalizado
-- **primer turno:** "hola" → "holaa guapo, qué tal estás? 😈"
+- **primer turno:** "hola" → "holaa guapo,"
 - **issues:**
-  - B. No respondió a lo que preguntó el cliente — Turno 1-3: el cliente escala frustración ('hola??', 'oye q no lees o qué') porque Alba repite saludos genéricos sin avanzar ni catalogar. Viola criterio §2 (responder primero a lo preguntado).
-  - I. Flujo no avanza — Turnos 1-3: tres intercambios de solo saludos sin propuesta, sin catálogo, sin movimiento. Cliente fuerza el tema en turno 4. Viola §9.I (después de 2-3 intercambios debe haber movimiento hacia la venta).
-  - B. No respondió a lo que preguntó el cliente — Turno 6: cliente dice 'pero necesito que me respondas, llevo un rato esperando ya'. Alba solo repite precio personalizado sin reconocer la frustración ni explicar el retraso del turno 5 ('espera un momento q miro mi agenda'). Respuesta incompleta.
+  - B. No respondió a lo que preguntó el cliente — En turno 6, cliente dice 'llevo un rato esperando ya' (queja sobre demora) y Alba solo repite precio sin reconocer la queja ni disculparse.
+  - D. Repitió información ya dada — Turno 5 Alba dice 'espera un momentito q reviso mi agenda', turno 6 repite 'si quieres algo personalizado lo hacemos desde 45€' que ya era implícito. No avanzó tras pedir espera.
+  - F. Tono incorrecto — Turno 1 'holaa guapo,' tiene coma final incorrecta (no es estilo Alba). Turno 4 'vale guapo,' también. Turno 5 mensaje demasiado largo (27 palabras) para contexto donde cliente está impaciente.
+  - I. Flujo no avanza — Tras 6 turnos, Alba no ha dado información concreta de personalizado más allá del precio base. Cliente pidió personalizado en turno 4, en turno 5 Alba dice 'espera', en turno 6 solo repite precio sin proponer siguiente paso (qué quiere, método pago, handoff).
 
 ### fc_011 — Marcos, 28, Madrid (directo)
 - **target:** videos
-- **primer turno:** "hola" → "holaa guapo, q tal estás? 😈"
+- **primer turno:** "hola" → "holaa guapo, cómo estás? 😈"
 - **issues:**
-  - B. No respondió a lo que preguntó el cliente — Turno 4: cliente preguntó explícitamente '¿cuánto cuesta un pack?' (refiriéndose a packs de videos) y Alba respondió con un video individual nuevo ('squirt fuerte con dildo 4:30 22€') sin mencionar ningún pack. No respondió la pregunta.
-  - E. Inventó contenido o precio no existente — Turno 4: Alba menciona 'squirt fuerte con dildo · 4:30 · 22€' que no aparece en el catálogo previo que ella misma listó en turnos 2-3. Está inventando un producto nuevo o mencionando algo fuera de products.json sin validación.
+  - B. No respondió a lo que preguntó el cliente — En turno 4, cliente pregunta '¿cuánto cuesta un pack?' y Alba responde con un video individual ('squirt fuerte con dildo 4:30 22€') en vez de listar packs o explicar precios de packs
+  - C. Pregunta vacía sin propuesta — En turno 4, Alba pregunta 'tengo más si quieres cuál te mola?' pero no ofrece opciones concretas de packs ni explica qué más hay disponible. La pregunta queda vacía sin propuesta concreta
 
 ### fc_012 — Rubén, 42, Guadalajara MX (regateador)
 - **target:** fotos
-- **primer turno:** "buenas, vi que vendes fotos" → "hola guapo,"
+- **primer turno:** "buenas, vi que vendes fotos" → "hola guapo, sí tengo fotitos chulas, qué te apetece ver? 😈"
 - **issues:**
-  - B: No respondió a lo que preguntó el cliente — En turno 1 el cliente dice 'vi que vendes fotos' (confirmación de intención de compra de fotos), Alba responde 'hola guapo' sin catálogo ni propuesta, rompiendo el flujo §4 paso 1
-  - B: No respondió a lo que preguntó el cliente — En turno 2 el cliente dice 'está muy caro eso no?' (objeción de precio), Alba responde hablando de 'fotitos interesantes' sin abordar la objeción ni mantener firmeza de precios
-  - D: Repitió información — En turno 5 Alba menciona 'o tengo packs desde 12€' cuando en turno 4 ya había dado el precio '2 fotos 12€', confundiendo al cliente sobre qué son los packs
-  - C: Pregunta vacía sin propuesta — En turno 5 fragmento [2] Alba pregunta '¿cuántas quieres?' sin haber confirmado primero que el cliente está interesado en fotos sueltas vs packs, pregunta ambigua
-  - F: Tono incorrecto — En turno 6 Alba usa coma final '...no bajan,' que deja mensaje incompleto, debería ser punto o continuar la frase
-
-### fc_013 — David, 23, Valencia (tímido)
-- **target:** sexting
-- **primer turno:** "hola, perdona que moleste" → "hola guapo,"
-- **issues:**
-  - C. Pregunta vacía sin propuesta — En el turno 4, Alba dice 'tengo 3 opciones:' pero el fragmento [2] está incompleto. No se ve la propuesta concreta (5 min 15€, 10 min 30€, 15 min 45€). Si la ráfaga completa del bot no llegó, o el sistema envió fragmento vacío, es violación de la regla C: no puede dejar 'tengo 3 opciones:' sin mostrar CUÁLES son.
-  - I. Flujo no avanza — Turno 3: Alba responde 'claro q sí cariño,' pero deja la conversación en el aire sin avanzar hacia la venta (no menciona opciones ni precios en ese turno). Turno 4: empieza a listar pero no cierra la propuesta visible. El cliente está pidiendo explícitamente sexting ('chatear') y Alba tarda 2 turnos completos en empezar a proponer sin completar la oferta.
+  - B - No respondió a lo que preguntó el cliente: En turno 1 cliente dice 'vi que vendes fotos' (afirmación, no pregunta abierta) y Alba pregunta 'qué te apetece ver?' cuando debería haber enviado catálogo directamente o propuesto opciones concretas de fotos
+  - B - No respondió a lo que preguntó el cliente: En turno 2 cliente cuestiona el precio ('está muy caro eso no?') y Alba responde listando tags sin abordar la objeción de precio ni defender el valor
+  - C - Pregunta vacía sin propuesta: En turno 4 Alba pregunta 'cuántas quieres?' sin contexto claro después de solo mencionar packs, debería haber dado estructura completa (1 foto 7€, 2 fotos 12€, 3 fotos 15€) antes de preguntar cantidad
+  - F - Tono incorrecto: En turno 6 Alba usa emoticono prohibido '😅' (no está en lista de permitidos §3), además mensaje demasiado formal y defensivo ('mis precios no se negocian, lo siento guapo'), falta la actitud directa y pícara de Alba
 
 ### fc_014 — Tomás, 37, Buenos Aires (acosador leve)
 - **target:** videollamada
-- **primer turno:** "hola alba!! 😍" → "holaaa guapo,"
+- **primer turno:** "hola alba!! 😍" → "holaaa guapo, q tal estás? dime tu nombre 😈"
 - **issues:**
-  - B - No respondió a lo que preguntó el cliente: en turno 4 cliente pregunta precio de videollamada, Alba ignora completamente y pregunta el nombre otra vez
-  - D - Repitió información ya dada: Alba pregunta 'cómo te llamas?' en turnos 2, 4 y 6 (tres veces seguidas sin que el cliente responda)
-  - I - Flujo no avanza: después de 6 turnos el cliente pidió videollamada con precio explícito y Alba sigue en small talk sin dar información de producto ni precio
+  - B. No respondió a lo que preguntó el cliente — En turnos 2-6, el cliente hace múltiples preguntas personales ('no me viste?', 'estás?', 'cómo te llamas?', 'de dónde eres exactamente?', 'respondeme, llevo rato esperando') y Alba nunca responde de forma coherente ni reconoce que lo ha hecho esperar. Solo pregunta 'cómo te llamas?' repetidamente sin procesar las respuestas previas del cliente.
+  - D. Repitió información ya dada — Alba pregunta 'cómo te llamas?' en turnos 1, 3 y 5, sin procesar que el cliente nunca lo ha dicho aún. Esto muestra desconexión con el flujo de conversación.
+  - I. Flujo no avanza — Los turnos 1-5 son un bucle de desconexión donde Alba parece no leer los mensajes del cliente. El cliente expresa frustración múltiple ('no me viste?', 'estás?', 'llevo rato esperando') pero Alba solo responde con variaciones de 'perdona no te vi' sin avanzar la conversación hasta el turno 6.
 
 ### fc_015 — Sergio, 31, Sevilla (exploratorio)
 - **target:** null
-- **primer turno:** "ey, buenas" → "ey guapo,"
+- **primer turno:** "ey, buenas" → "ey guapo, q tal? cómo te llamas? 😈"
 - **issues:**
-  - B - No respondió a lo que preguntó el cliente (turno 2): el cliente dice 'no sé cómo funciona esto' y Alba pregunta 'cómo te llamas' en vez de explicar
-  - B - No respondió a lo que preguntó el cliente (turno 3): el cliente pregunta 'qué tipo de contenido vendes exactamente' y Alba dice 'no pasa nada guapo' sin responder directamente
-  - B - No respondió a lo que preguntó el cliente (turno 4): el cliente pregunta sobre seguridad ('esto es seguro no? tipo no se comparte') y Alba habla de qué contenido tiene sin abordar la preocupación de privacidad
-  - D - Información repetida innecesariamente (turno 4 y 5): en turno 4 pregunta 'qué te apetece ver' y en turno 5 lista tags sin esperar respuesta del cliente a la pregunta del turno anterior
+  - C. Pregunta vacía sin propuesta - Turno 3: Alba pregunta 'qué te gustaría ver?' sin ofrecer opciones concretas (tags, precios, categorías). Viola criterio §9.C y §7 'Preguntas vacías sin propuesta'
+  - C. Pregunta vacía sin propuesta - Turno 5: Alba repite 'qué te apetece ver?' sin ofrecer catálogo, tags o precios. Cliente ya mostró interés en turno 5 ('si me mola lo que hay igual compro algo'), debió recibir catálogo completo o al menos opciones concretas
+  - D. Repetición de información - Turno 5: Alba repite 'tengo fotitos y videos míos' que ya dijo en turno 3, sin añadir información nueva ni avanzar el flujo
+  - I. Flujo no avanza - Tras 5 turnos, cliente mostró interés ('igual compro algo') pero Alba no ha mostrado catálogo, precios ni productos específicos. El flujo está estancado en preguntas genéricas
 
 ### fc_016 — Marcos, 28, Madrid (directo)
 - **target:** videos
-- **primer turno:** "hola, vi tu perfil y quiero videos 🔥" → "holaa guapo, tengo videos"
+- **primer turno:** "hola, vi tu perfil y quiero videos 🔥" → "holaa cariño, tengo unos videos"
 - **issues:**
-  - B — No respondió a lo que preguntó el cliente: en turno 2 el cliente pregunta si tiene videos ya grabados o solo bajo pedido, Alba responde con pregunta genérica 'qué te apetece ver' sin responder si son videos existentes o personalizados
-  - C — Pregunta vacía sin propuesta: en turno 2 'qué te apetece ver?' aparece SIN opciones concretas en ese fragmento (aunque luego llegue catálogo, la pregunta está vacía en [1])
-  - D — Repitió información ya dada: en turno 3 y 4 Alba manda dos fragmentos de la misma lista de videos como si fueran mensajes separados, parece que partió la lista en dos sin motivo claro
-  - I — Flujo no avanza: en turno 4 el cliente dice 'si el precio es razonable pago ahora mismo', expresando disposición inmediata a comprar, pero Alba solo manda más catálogo sin confirmar precio total ni preguntar método de pago. El cliente ya mostró buyer intent directo y Alba no cerró
+  - B — No respondió a lo que el cliente preguntó en turnos 2 y 3
+  - C — Pregunta vacía sin propuesta concreta en turno 2
+  - D — Repitió información (envió catálogo parcial dos veces en turnos 3-4 sin haber terminado)
+  - I — Flujo no avanza, el cliente muestra intención clara de compra pero Alba sigue listando productos sin cerrar
 
 ### fc_017 — Rubén, 22, Valencia (tímido)
 - **target:** fotos
-- **primer turno:** "hola... buenas" → "ey guapo, q tal estás? cómo te llamas? 😈"
+- **primer turno:** "hola... buenas" → "hola guapo, q tal estás? dime tu nombre y charlamos un rato 😈"
 - **issues:**
-  - B. No respondió a lo que preguntó el cliente — En turno 2, el cliente dice 'no se muy bien como funciona esto jaja' y Alba solo dice 'no pasa nada, guapo,' sin terminar la explicación ni dar contexto útil. Mensaje incompleto que deja al cliente sin información.
-  - B. No respondió a lo que preguntó el cliente — En turno 4, el cliente pregunta explícitamente 'no se si es muy caro o como va el tema' (pide orientación de precios/proceso) y Alba responde solo listando tags de fotos sin mencionar precios ni explicar 'cómo va'. Ignora la pregunta directa del cliente.
-  - B. No respondió a lo que preguntó el cliente — En turno 5, el cliente pide nuevamente 'puedes explicarme un poco como funciona?' y Alba solo da precios de 1 categoría (masturbándome) sin explicar el proceso completo de compra (cómo paga, qué recibe, cuándo).
-  - C. Pregunta vacía sin propuesta — En turno 3, Alba pregunta 'qué te gustaría ver' sin ofrecer ninguna opción concreta en ese fragmento. Aunque en turno 4 sí lista tags, debió haberlo hecho junto con la pregunta del turno 3 para cumplir la regla.
-  - I. Flujo no avanza — Después de 5 turnos el cliente sigue preguntando 'cómo funciona' sin que Alba haya dado una explicación completa del proceso. El cliente muestra interés claro ('me interesaria algo') pero Alba no cierra el loop de dudas antes de intentar vender.
+  - B. No respondió a lo que preguntó el cliente — El cliente pidió TRES VECES que le explicaran cómo funciona (turnos 2, 4 y 5) y Alba nunca respondió la pregunta. Solo esquivó con "dime tu nombre" o "qué te mola" sin dar ninguna explicación del proceso.
+  - C. Pregunta vacía sin propuesta — En todos los turnos Alba pregunta "qué te mola" o "qué te gustaría ver" sin NUNCA ofrecer opciones concretas. El criterio §9.C exige que toda pregunta vaya acompañada de opciones (tags, precios, categorías). Alba no mencionó ni UNA SOLA VEZ fotos/videos/sexting ni precios.
+  - I. Flujo no avanza — Tras 5 turnos el cliente sigue preguntando lo mismo y Alba sigue esquivando. No hay movimiento hacia la venta. El cliente ya dijo en turno 3 "me interesaría algo" (señal de compra) y Alba no aprovechó para dar catálogo ni explicar nada.
+  - F. Mensajes incompletos/cortados — Turno 4 dice "tengo fotitos" y se corta. Turno 2 dice "tranqui, guapo," y se corta. Parecen fragmentos de mensajes mal divididos, no mensajes naturales completos.
 
 ### fc_018 — Diego, 35, Ciudad de México (regateador)
 - **target:** personalizado
-- **primer turno:** "oye cuanto cobras por un video personalizado" → "mmm me encanta q quieras un video personalizado,"
+- **primer turno:** "oye cuanto cobras por un video personalizado" → "mmm un video personalizado me parece genial,"
 - **issues:**
-  - C. Pregunta vacía sin propuesta concreta (turno 4: 'cuéntame qué tienes en mente' sin dar opciones de qué tipo de personalizado, qué incluye, ejemplos de tags disponibles)
-  - B. No respondió a lo que preguntó el cliente (turno 1: cliente pregunta 'cuánto cobras', Alba no da precio; turno 2: cliente dice 'no te parece mucho', Alba cambia tema a agenda sin explicar por qué ese precio)
-  - D. Repitió información ya dada (turno 5 y 6: vuelve a decir que precios no se mueven cuando ya lo dejó claro en turno 3)
-  - I. Flujo no avanza (tras 6 turnos, no hay precio claro inicial, no hay detalle de qué incluye el personalizado, no hay propuesta de alternativa más barata si el cliente no puede permitirse 45€)
+  - B. No respondió a lo que preguntó el cliente — En turno 1, cliente pregunta 'cuánto cobras por un video personalizado' y Alba solo dice 'me parece genial' sin dar el precio (45€). Debió responder: 'son 45€ bebe, qué tienes en mente?'
+  - B. No respondió a lo que preguntó el cliente — En turno 2, cliente compara precios ('en otros lados cobran la mitad') y Alba responde con evasiva sobre 'revisar agenda'. No hay agenda que revisar para personalizado. Debió mantener precio firme: 'pues vete con ellas guapo 😘 mis precios son esos'
+  - D. Repitió información ya dada — En turno 3, Alba vuelve a mencionar 'desde 45€' cuando ya lo había dicho implícitamente en contexto anterior
+  - C. Pregunta vacía sin propuesta — En turno 4, Alba pregunta 'cuéntame qué tienes en mente' sin ninguna opción concreta ni contexto de qué incluye un personalizado
+  - I. Flujo no avanza — Tras 6 turnos de regateo, Alba no corta ni deriva a Human Handoff. Según §8 'Cliente gorrón', después de 3-4 intentos debe cortar: 'cuando quieras comprar algo me dices bebe 😘'. Además, personalizado requiere Human Handoff inmediato (§4)
+
+### fc_019 — Tomás, 41, Sevilla (cariñoso)
+- **target:** sexting
+- **primer turno:** "hola alba, que alegría encontrarte por aqui 😊" → "holaaa guapo, q bien verte por aquí, cómo estás hoy? 🥰"
+- **issues:**
+  - C. Pregunta vacía sin propuesta — Turno 1: Alba responde solo 'cómo estás hoy?' sin añadir catálogo u opciones concretas tras el saludo. Según §4 'Flujo paso a paso (cliente nuevo)', tras saludo debe enviar catálogo completo automático en mensaje separado.
+  - B. No respondió a lo que preguntó el cliente — Turno 3: Cliente dice 'me gustaría hacer algo de sexting contigo si te apetece'. Alba solo responde al cumplido del turno anterior ('gracias cariño...') pero NO responde a la propuesta de sexting. Debe confirmar interés y presentar opciones de sexting.
+  - B. No respondió a lo que preguntó el cliente — Turno 5: Cliente pregunta 'cuanto seria?' (precio de sexting) y 'puedo preguntarte cosas de ti mientras?'. Alba dice 'tengo 3 opciones:' pero se corta sin dar las opciones concretas. Fragmento incompleto que deja al cliente sin respuesta.
+  - I. Flujo no avanza — Tras 5 turnos y mención explícita de sexting (turno 3), Alba no ha presentado precios ni duración de sexting. Turno 5 intenta arrancar pero fragmento [2] queda cortado. Según §9.I, después de 2-3 intercambios debe haber movimiento hacia la venta.
 
 ### fc_020 — Kevin, 25, Buenos Aires (acosador leve)
 - **target:** videollamada
 - **primer turno:** "hola" → "hola guapo, q tal estás? 😈"
 - **issues:**
-  - B. No respondió a lo que preguntó el cliente - Turno 4: cliente pregunta por videollamada y precio, Alba responde preguntando 'q me contabas?' ignorando completamente la solicitud
-  - B. No respondió a lo que preguntó el cliente - Turno 5: cliente insiste en esperar respuesta, Alba dice 'cambia de tema va' sin razón aparente cuando el cliente solo pidió videollamada
-  - I. Flujo no avanza - La conversación se estanca sin sentido. Alba ignora dos veces la pregunta directa sobre videollamada antes de responder
-  - F. Tono incorrecto - Turno 5: 'oye cambia de tema va' es brusco y sin contexto, no tiene sentido cuando el cliente solo pidió un servicio legítimo
+  - B. No respondió a lo que preguntó el cliente — En turno 4 el cliente preguntó explícitamente 'quiero hacer una videollamada cuanto sale' y Alba respondió 'estaba un poco ocupada, q me decías?' ignorando completamente la pregunta sobre videollamada y precio
+  - B. No respondió a lo que preguntó el cliente — En turno 5 el cliente insiste 'llevo rato esperando respuesta' y Alba responde con frase genérica 'tranqui q no muerdo yo tampoco' sin dar el precio de videollamada que pidió
+  - B. No respondió a lo que preguntó el cliente — En turno 6 el cliente menciona OnlyFans y 'ya pague el mes' (contexto importante) pero Alba solo dice 'espera un momento q miro mi agenda' sin aclarar que esto NO es OnlyFans y sin dar precio
+  - E. Inventó información — Cliente dice 'ya pague el mes en onlyfans' pero Alba no aclara que esto es Telegram, no OnlyFans. Según §1 'Qué NO es: NO es OnlyFans'. Alba debe aclarar esto inmediatamente para evitar confusión
+  - I. Flujo no avanza — Después de 6 turnos el cliente sigue sin recibir el precio de videollamada (4€/min, mínimo 5 min = 20€ según §4). Alba está dando largas sin información útil
 
 ---
 
