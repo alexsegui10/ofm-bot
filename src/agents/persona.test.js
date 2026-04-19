@@ -113,6 +113,29 @@ describe('buildSystemPrompt — first-person and no-repeat rules', () => {
   });
 });
 
+describe('buildSystemPrompt — anti-catalog-repeat (BUG G1 Pacer fix)', () => {
+  it('includes the explicit anti-catalog-repeat rule', () => {
+    const prompt = buildSystemPrompt({}, 'small_talk');
+    expect(prompt).toContain('PROHIBIDO ABSOLUTAMENTE repetir la lista de precios del catálogo');
+  });
+
+  it('explicitly forbids common catalog row patterns', () => {
+    const prompt = buildSystemPrompt({}, 'small_talk');
+    expect(prompt).toContain('1 foto 7€');
+    expect(prompt).toContain('2 fotos 12€');
+  });
+
+  it('warns about duplication risk so the model understands WHY', () => {
+    const prompt = buildSystemPrompt({}, 'small_talk');
+    expect(prompt).toContain('DUPLICADO');
+  });
+
+  it('applies for sale intents too (catalog can also be appended in product_selection)', () => {
+    const prompt = buildSystemPrompt({}, 'product_selection');
+    expect(prompt).toContain('PROHIBIDO ABSOLUTAMENTE repetir la lista de precios');
+  });
+});
+
 describe('runPersona', () => {
   beforeEach(() => vi.clearAllMocks());
 

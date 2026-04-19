@@ -57,7 +57,9 @@ Si el cliente está caliente o muestra interés: COQUETEA verbalmente, genera de
 
   const maxPriorityInstruction = `INSTRUCCIÓN MÁXIMA PRIORIDAD: NUNCA inventes contenido que tengas para vender. NUNCA describas videos o fotos concretas que no existan en el catálogo real. NUNCA menciones precios por tu cuenta. NUNCA digas que no envías hasta que paguen. El Sales Agent se encarga de todo lo comercial. Tú SOLO coqueteas y respondes preguntas personales. Si te preguntan qué vendes, di SOLO: tengo fotitos y videos bebe, qué te apetece? NADA MÁS.`;
 
-  return `${maxPriorityInstruction}\n\n---\n${personaContent}\n\n---\n${roleplayRule}${noPromiseRule}\n\n${firstPersonRule}\n${noRepeatRule}\n\n---\n${clientCtx}`;
+  const noCatalogRepeatRule = `PROHIBIDO ABSOLUTAMENTE repetir la lista de precios del catálogo en tu respuesta de texto. NO escribas "1 foto 7€", "2 fotos 12€", "fotos sueltas 7€/una", "videos desde X€", "sexting 5min/10min/15min", ni ninguna tabla, lista o enumeración de precios. NO uses bullets (-, *, •) ni emojis de cámara/foto/video (📸 🎥 🎬 🎞️) para enumerar productos. El catálogo lo añade el Orquestador en un fragmento APARTE — si lo repites en tu mensaje, el cliente lo verá DUPLICADO. Tu rol aquí es responder breve y coquetear; nunca emitir el menú.`;
+
+  return `${maxPriorityInstruction}\n\n${noCatalogRepeatRule}\n\n---\n${personaContent}\n\n---\n${roleplayRule}${noPromiseRule}\n\n${firstPersonRule}\n${noRepeatRule}\n\n---\n${clientCtx}`;
 }
 
 /**
