@@ -326,3 +326,80 @@ export async function createOfferFromProduct({ productId, client, paymentMethod 
   log.warn({ productId }, 'createOfferFromProduct: unknown productId');
   return null;
 }
+
+/**
+ * HIGH-ROI FIX #1 helper — pure price lookup for a productId (no side effects,
+ * no invoice, no DB row). Used by the orchestrator when the client has chosen
+ * a product but not yet a payment method, so Alba can ask "bizum, crypto o
+ * stars?" stating the correct amount without pre-creating any transaction.
+ *
+ * Accepts the same productId vocabulary as createOfferFromProduct:
+ *   - "v_001"...             → video individual
+ *   - "pk_001"...            → pack de fotos
+ *   - "st_5min"|"st_10min"|"st_15min" → sexting template
+ *   - "singles:<tag>:<count>"         → fotos sueltas
+ *   - "videocall:<minutes>"           → videollamada (mín. 5 min)
+ *   - "custom"                        → personalizado (precio mínimo)
+ *
+ * @param {string} productId
+ * @returns {{ amountEur: number, description: string, productType: string } | null}
+ */
+export function lookupProductPrice(productId) {
+  if (!productId) return null;
+  const products = getProducts();
+
+  if (/^v_\d+$/.test(productId)) {
+    const v = products.videos.find((x) => x.id === productId && x.activo);
+    if (!v) return null;
+    return { amountEur: v.precio_eur, description: v.titulo, productType: 'video' };
+  }
+
+  if (/^pk_\d+$/.test(productId)) {
+    const pk = products.photo_packs.find((x) => x.id === productId && x.activo);
+    if (!pk) return null;
+    return { amountEur: pk.precio_eur, description: pk.titulo, productType: 'pack' };
+  }
+
+  if (/^st_\d+min$/.test(productId)) {
+    const st = products.sexting_templates.find((x) => x.id === productId);
+    if (!st) return null;
+    return { amountEur: st.precio_eur, description: `Sexting ${st.duracion_min} min`, productType: 'sexting' };
+  }
+
+  if (productId.startsWith('singles:')) {
+    const [, tag, countStr] = productId.split(':');
+    const count = Number(countStr);
+    if (!tag || !Number.isInteger(count)) return null;
+    if (!products.photo_single.tags_disponibles.includes(tag)) return null;
+    try {
+      const amount = calculatePhotoPrice(count);
+      return {
+        amountEur: amount,
+        description: `${count} ${count === 1 ? 'foto' : 'fotos'} de ${tag}`,
+        productType: 'photos',
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  if (productId.startsWith('videocall:')) {
+    const mins = Number(productId.split(':')[1]);
+    if (!Number.isInteger(mins) || mins < products.videollamada.minimo_minutos) return null;
+    return {
+      amountEur: mins * products.videollamada.precio_por_minuto,
+      description: `Videollamada ${mins} min`,
+      productType: 'videocall',
+    };
+  }
+
+  if (productId === 'custom') {
+    return {
+      amountEur: products.personalizado.precio_minimo,
+      description: 'Video personalizado',
+      productType: 'custom',
+    };
+  }
+
+  return null;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { runSales, createOfferFromProduct } from './sales.js';
+import { runSales, createOfferFromProduct, lookupProductPrice } from './sales.js';
 
 vi.mock('../lib/payments/nowpayments.js', () => ({
   createInvoice: vi.fn(),
@@ -337,5 +337,63 @@ describe('createOfferFromProduct → offer carries productId + amountEur for set
     const offer = await createOfferFromProduct({ productId: 'singles:tetas:4', client: CLIENT, paymentMethod: 'bizum' });
     expect(offer.productId).toBe('singles:tetas:4');
     expect(offer.amountEur).toBe(19);
+  });
+});
+
+// ─── HIGH-ROI FIX #1 — lookupProductPrice (pure, no side effects) ────────────
+
+describe('lookupProductPrice — pure price lookup', () => {
+  it('returns price for v_001 (video individual) without creating transaction', () => {
+    const r = lookupProductPrice('v_001');
+    expect(r).toMatchObject({ amountEur: 20, productType: 'video' });
+    expect(createTransaction).not.toHaveBeenCalled();
+  });
+
+  it('returns price for pk_002 (pack)', () => {
+    const r = lookupProductPrice('pk_002');
+    expect(r).toMatchObject({ amountEur: 12, productType: 'pack' });
+  });
+
+  it('returns price for st_15min (sexting template)', () => {
+    const r = lookupProductPrice('st_15min');
+    expect(r).toMatchObject({ amountEur: 45, productType: 'sexting' });
+  });
+
+  it('returns scaled price for singles:tetas:4', () => {
+    const r = lookupProductPrice('singles:tetas:4');
+    expect(r).toMatchObject({ amountEur: 19, productType: 'photos' });
+    expect(r.description).toMatch(/4 fotos de tetas/);
+  });
+
+  it('returns price for videocall:10', () => {
+    const r = lookupProductPrice('videocall:10');
+    expect(r?.amountEur).toBe(40);
+    expect(r?.productType).toBe('videocall');
+  });
+
+  it('rejects videocall below minimum', () => {
+    expect(lookupProductPrice('videocall:3')).toBeNull();
+  });
+
+  it('returns price for custom', () => {
+    const r = lookupProductPrice('custom');
+    expect(r?.amountEur).toBeGreaterThanOrEqual(45);
+    expect(r?.productType).toBe('custom');
+  });
+
+  it('returns null for unknown productId', () => {
+    expect(lookupProductPrice('xyz')).toBeNull();
+    expect(lookupProductPrice('')).toBeNull();
+    expect(lookupProductPrice(null)).toBeNull();
+  });
+
+  it('does NOT create any DB transaction (pure function)', () => {
+    vi.clearAllMocks();
+    lookupProductPrice('v_001');
+    lookupProductPrice('pk_002');
+    lookupProductPrice('st_10min');
+    lookupProductPrice('singles:culo:3');
+    expect(createTransaction).not.toHaveBeenCalled();
+    expect(createInvoice).not.toHaveBeenCalled();
   });
 });
