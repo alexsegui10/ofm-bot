@@ -163,14 +163,17 @@ async function getMediaTags(mediaType) {
  * Build the internal Persona instruction for an active sexting v2 turn.
  * Uses phase + clientState + roleplay from `handleClientTurn` to steer tone
  * without leaking the engine internals to the client.
+ *
+ * Exported for unit tests — the prompt rules here are load-bearing for
+ * F1-F4 scenarios (no setup questions, no image-confirmation, dirige TÚ).
  */
-function buildSextingV2Instruction(turn) {
+export function buildSextingV2Instruction(turn) {
   const phaseTone = {
-    warm_up:   'Estás empezando: tono coqueto y suave, como entrando en calor.',
-    teasing:   'Vas subiendo: provocadora, juega con lo que viene.',
-    escalada:  'Vas a tope: explícita, directa, sin frenos.',
-    climax:    'Es el momento clímax: muy intensa, breve, en caliente.',
-    cool_down: 'Estás bajando: tierna, satisfecha, despídete con cariño sin cortar.',
+    warm_up:   'FASE warm_up: empiezas describiendo lo que TÚ haces, sientes o piensas en este momento (ej: "estoy en la cama tocándome pensando en ti..."). NO preguntes nada al cliente, TÚ arrancas la acción.',
+    teasing:   'FASE teasing: subes la temperatura, provocadora, describiendo gestos y sensaciones que CREAS tú.',
+    escalada:  'FASE escalada: vas a tope, explícita, directa, sin frenos. Describe lo que estás haciendo en detalle.',
+    climax:    'FASE climax: muy intensa, breve, en caliente. Estás acabando.',
+    cool_down: 'FASE cool_down: tierna, satisfecha, despídete con cariño sin cortar.',
   };
   const stateTone = {
     engaged:  '',
@@ -179,16 +182,18 @@ function buildSextingV2Instruction(turn) {
     finished: 'El cliente ya acabó: tierna y breve, despide la sesión.',
   };
   const roleplayLine = turn.roleplay
-    ? `Mantén el rol "${turn.roleplay}" sin romperlo en ningún momento.`
+    ? `Estás EN ROL "${turn.roleplay}" desde antes — NO preguntes detalles del setup (ni "qué asignatura", ni "qué te duele", ni "en qué te ayudo"). Ya estás dentro del personaje, ARRANCA la acción dirigiendo tú.`
     : '';
   const lines = [
-    'ESTÁS EN MEDIO DE UNA SESIÓN DE SEXTING activa. Responde en personaje, breve (1-2 frases), sin presentarte ni saludar como si fuera el primer mensaje.',
+    'ESTÁS EN MEDIO DE UNA SESIÓN DE SEXTING ACTIVA. El cliente ya pagó, ya está dentro, no hay nada que vender ni explicar. Responde EN PERSONAJE, breve (1-2 frases), SIN presentarte, SIN saludar.',
+    'REGLA CRÍTICA #1 — TÚ DIRIGES: nunca hagas preguntas tipo "qué quieres", "qué necesitas", "qué te apetece", "qué prefieres", "cómo te ayudo", "qué te gusta más". TÚ describes, TÚ propones, TÚ marcas el ritmo.',
+    'REGLA CRÍTICA #2 — NUNCA confirmes ver imágenes: si el cliente manda una foto/video suyo, NO digas "ya lo vi", "qué rico", "me encanta lo que veo" ni nada que sugiera que ves la imagen. Reacciona como si te estuviera DESCRIBIENDO con palabras (ej: "cuéntame qué me estás enseñando bebe...").',
+    'REGLA CRÍTICA #3 — NADA de catálogo: NUNCA menciones precios, otros packs, otras fotos, plantillas de sexting, ni propongas comprar nada. La sesión está pagada y va sola.',
     phaseTone[turn.phase] || phaseTone.warm_up,
     stateTone[turn.clientState] || '',
     roleplayLine,
-    'NUNCA menciones precios, catálogo, fotos extra, ni preguntes "qué quieres" — eso ya está hablado.',
   ].filter(Boolean);
-  return lines.join(' ');
+  return lines.join('\n');
 }
 
 // v2 intents routed through the products.json catalog (resolved via content-dispatcher).
@@ -360,10 +365,15 @@ export async function handleMessage({
     });
     if (activeV2) {
       const turn = await handleClientTurn({ sessionId: activeV2.session_id, clientMessage: text });
+      // Load recent history BEFORE saving the current message so Persona has
+      // continuity context for the active sexting session (otherwise Grok would
+      // see only the current message + system prompt and might break tone).
+      const v2RawHistory = await getHistory(client.id, 6).catch(() => []);
+      const v2History = normalizeHistory(v2RawHistory);
       await saveMessage(client.id, 'user', text);
 
       const personaInstruction = buildSextingV2Instruction(turn);
-      const personaText = await runPersona(text, [], client, 'sexting_active', personaInstruction);
+      const personaText = await runPersona(text, v2History, client, 'sexting_active', personaInstruction);
       const qg = await runQualityGate(personaText, client, 'sexting_active');
       const finalText = qg.ok ? personaText : (qg.safeResponse || 'mmm sigue bebe 😈');
       await saveMessage(client.id, 'assistant', finalText, 'sexting_active');

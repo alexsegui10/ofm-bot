@@ -37,13 +37,18 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('sale_intent_photos');
   });
 
-  it('appends internal instruction inside INSTRUCCION_INTERNA tags', async () => {
+  it('PREPENDS internal instruction with INSTRUCCION_PRIORITARIA so it overrides the persona prompt', async () => {
     callOpenRouter.mockResolvedValue('ola q tal');
     await runPersona('hola', [], {}, 'small_talk', 'do not mention prices');
     const call = callOpenRouter.mock.calls[0][0];
     const systemMsg = call.messages.find((m) => m.role === 'system');
-    expect(systemMsg.content).toContain('<INSTRUCCION_INTERNA>');
+    expect(systemMsg.content).toContain('<INSTRUCCION_PRIORITARIA>');
     expect(systemMsg.content).toContain('do not mention prices');
+    // Must come BEFORE the regular max-priority block (i.e. at the top of the prompt).
+    const priorIdx = systemMsg.content.indexOf('<INSTRUCCION_PRIORITARIA>');
+    const personaIdx = systemMsg.content.indexOf('INSTRUCCIÓN MÁXIMA PRIORIDAD');
+    expect(priorIdx).toBeGreaterThanOrEqual(0);
+    expect(priorIdx).toBeLessThan(personaIdx);
   });
 });
 

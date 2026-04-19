@@ -75,7 +75,10 @@ export async function runPersona(message, history = [], client = {}, intent = 's
 
   let systemPrompt = buildSystemPrompt(client, intent);
   if (internalInstruction) {
-    systemPrompt += `\n\n<INSTRUCCION_INTERNA>${internalInstruction}</INSTRUCCION_INTERNA>`;
+    // Prepend with maximum priority — internal instructions (e.g. sexting v2
+    // conductor steering) must override the generic persona prompt, not be
+    // appended at the bottom where the model is more likely to ignore them.
+    systemPrompt = `<INSTRUCCION_PRIORITARIA>\n${internalInstruction}\n</INSTRUCCION_PRIORITARIA>\n\n${systemPrompt}`;
   }
 
   // Build messages array: history + current message
