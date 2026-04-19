@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { quickCheck, buildQualityGatePrompt, runQualityGate } from './quality-gate.js';
+import { quickCheck, buildQualityGatePrompt, runQualityGate, FORBIDDEN_BIO_LEAK, BIO_LEAK_REASON } from './quality-gate.js';
 
 vi.mock('../lib/llm-client.js', () => ({
   callAnthropic: vi.fn(),
@@ -57,6 +57,93 @@ describe('quickCheck', () => {
 
   it('allows commercial promise on sexting_request', () => {
     expect(quickCheck('te enseño algo rico ahora', 'sexting_request')).toBeNull();
+  });
+});
+
+// ─── BUG CRÍTICO #3: bio leak (universidades / barrios Madrid) ─────────────────
+
+describe('FORBIDDEN_BIO_LEAK regex', () => {
+  it('matches Complutense (case-insensitive)', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('estudio en la complutense bebe')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('estudié en la COMPLUTENSE')).toBe(true);
+  });
+
+  it('matches Moncloa', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('vivo en moncloa')).toBe(true);
+  });
+
+  it('matches UAM and Autónoma', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('voy a la uam')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('estoy en la autónoma de madrid')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('autonoma sin tilde también')).toBe(true);
+  });
+
+  it('matches Carlos III with optional spaces', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('soy de carlos iii')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('la carlosiii está cerca')).toBe(true);
+  });
+
+  it('matches Rey Juan Carlos', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('estudio en la rey juan carlos')).toBe(true);
+  });
+
+  it('matches Cuatro Caminos', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('paso por cuatro caminos cada día')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('vivo cerca de cuátrocaminos')).toBe(true);
+  });
+
+  it('matches Argüelles with and without diaeresis', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('barrio argüelles')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('barrio arguelles también')).toBe(true);
+  });
+
+  it('does NOT match unrelated text', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('estudio en madrid bebe')).toBe(false);
+    expect(FORBIDDEN_BIO_LEAK.test('voy a la facultad por la mañana')).toBe(false);
+    expect(FORBIDDEN_BIO_LEAK.test('soy del centro de la capital')).toBe(false);
+  });
+});
+
+describe('quickCheck — bio_leak detection', () => {
+  it('flags Complutense in any intent', () => {
+    const reason = quickCheck('estudio en la complutense', 'small_talk');
+    expect(reason).toBe(BIO_LEAK_REASON);
+  });
+
+  it('flags Moncloa in product_selection too (intent-agnostic)', () => {
+    const reason = quickCheck('vivo en moncloa cerca de la facultad', 'product_selection');
+    expect(reason).toBe(BIO_LEAK_REASON);
+  });
+
+  it('flags UAM in sexting_request', () => {
+    const reason = quickCheck('estudio en la uam bebe', 'sexting_request');
+    expect(reason).not.toBeNull();
+  });
+
+  it('returns null for safe answers like "estudio en madrid"', () => {
+    expect(quickCheck('estudio en madrid bebe', 'small_talk')).toBeNull();
+  });
+
+  it('exposes BIO_LEAK_REASON for orchestrator routing', () => {
+    expect(typeof BIO_LEAK_REASON).toBe('string');
+    expect(BIO_LEAK_REASON.length).toBeGreaterThan(0);
+  });
+});
+
+describe('runQualityGate — bio_leak short-circuit', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('blocks "estudio en la complutense" via quickCheck (no LLM call)', async () => {
+    const result = await runQualityGate('estudio en la complutense', {}, 'small_talk');
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe(BIO_LEAK_REASON);
+    expect(callAnthropic).not.toHaveBeenCalled();
+  });
+
+  it('blocks "vivo en moncloa" via quickCheck regardless of intent', async () => {
+    const result = await runQualityGate('vivo en moncloa', {}, 'product_selection');
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe(BIO_LEAK_REASON);
   });
 });
 

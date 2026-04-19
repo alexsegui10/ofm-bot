@@ -2,7 +2,7 @@ import { agentLogger } from './lib/logger.js';
 import { getOrCreateClient, getClientById, updateProfile, updateFraudScore } from './agents/profile-manager.js';
 import { runRouter } from './agents/router.js';
 import { runPersona } from './agents/persona.js';
-import { runQualityGate } from './agents/quality-gate.js';
+import { runQualityGate, FORBIDDEN_BIO_LEAK, BIO_LEAK_REASON } from './agents/quality-gate.js';
 import { saveMessage, getHistory, normalizeHistory, logQualityGateFailure, getLastInteractionDate, countPriorMessages } from './lib/conversation.js';
 import { fragmentMessage, getPacerConfig } from './agents/message-pacer.js';
 import { confirmBizumByClient } from './agents/payment-verifier.js';
@@ -686,27 +686,52 @@ export async function handleMessage({
   );
 
   // ── 8. Quality Gate ─────────────────────────────────────────────────────
+  // Loop hasta 2 reintentos. Para bio_leak (universidad/barrio Madrid) se usa
+  // una instrucción reforzada explícita; si tras los 2 retries el modelo sigue
+  // inyectando los términos prohibidos, se sustituye por una versión sanitizada
+  // (regex-replace) en lugar del safeResponse genérico, para no romper el flujo.
   let finalResponse = personaResponse;
   const qg1 = await runQualityGate(personaResponse, updatedClient ?? client, resolvedIntent);
 
   if (!qg1.ok) {
     log.warn({ reason: qg1.reason }, 'quality gate: first pass failed — regenerating');
 
-    const retryInstruction =
-      `Tu respuesta anterior fue rechazada. Razón: "${qg1.reason}". ` +
-      `IMPORTANTE: reestructura la frase entera, no solo borra el dato problemático.`;
-    const retryResponse = await runPersona(savedText, history, updatedClient ?? client, resolvedIntent, retryInstruction);
-    const qg2 = await runQualityGate(retryResponse, updatedClient ?? client, resolvedIntent);
+    const buildRetryInstruction = (reason) => (
+      reason === BIO_LEAK_REASON
+        ? 'Tu respuesta anterior nombró una universidad o un barrio CONCRETO de Madrid (Complutense, UAM, Carlos III, Moncloa, Argüelles, Cuatro Caminos…). PROHIBIDO ABSOLUTO mencionar lugares reales. Si te preguntan dónde estudias / vives / de dónde eres, responde de forma vaga y coqueta: "estudio en Madrid bebe, qué más da" o "soy de Madrid pero a ti qué te importa eh 😈". Sin nombres propios. NUNCA.'
+        : `Tu respuesta anterior fue rechazada. Razón: "${reason}". IMPORTANTE: reestructura la frase entera, no solo borra el dato problemático.`
+    );
+
+    let retryInstruction = buildRetryInstruction(qg1.reason);
+    let retryResponse = await runPersona(savedText, history, updatedClient ?? client, resolvedIntent, retryInstruction);
+    let qgN = await runQualityGate(retryResponse, updatedClient ?? client, resolvedIntent);
+
+    // Segundo retry (solo si el primero también falla).
+    if (!qgN.ok) {
+      log.warn({ reason: qgN.reason }, 'quality gate: second pass failed — regenerating once more');
+      retryInstruction = buildRetryInstruction(qgN.reason);
+      retryResponse = await runPersona(savedText, history, updatedClient ?? client, resolvedIntent, retryInstruction);
+      qgN = await runQualityGate(retryResponse, updatedClient ?? client, resolvedIntent);
+    }
 
     await logQualityGateFailure({
       clientId: client.id,
       originalResponse: personaResponse,
       failureReason: qg1.reason,
       regeneratedResponse: retryResponse,
-      fallbackUsed: !qg2.ok,
+      fallbackUsed: !qgN.ok,
     });
 
-    finalResponse = qg2.ok ? retryResponse : (qg2.safeResponse || 'espera un momento');
+    if (qgN.ok) {
+      finalResponse = retryResponse;
+    } else if (qg1.reason === BIO_LEAK_REASON || qgN.reason === BIO_LEAK_REASON) {
+      // Sanitizar in-place en lugar de safeResponse genérico — preserva
+      // contexto y registro de Alba.
+      finalResponse = (retryResponse || personaResponse).replace(FORBIDDEN_BIO_LEAK, 'Madrid').trim();
+      log.warn({ client_id: client.id }, 'quality gate: bio_leak persisted after 2 retries — sanitized in-place');
+    } else {
+      finalResponse = qgN.safeResponse || 'espera un momento';
+    }
   }
 
   // ── 9. Save assistant response ──────────────────────────────────────────

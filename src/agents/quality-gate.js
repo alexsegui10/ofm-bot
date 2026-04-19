@@ -29,6 +29,14 @@ const COMMERCIAL_PROMISE_PATTERN = /tengo\s+(esto|algo|cositas?|contenido)\s+(pa
 // (see C3 scenario), so the check is intent-gated.
 const SEXTING_PERSONAL_LEAK_PATTERN = /\b(ade|complutense|moncloa)\b/i;
 
+// Pattern: bio leaks the model alucinates when the client asks "dónde estudias / vives"
+// (C2/C3). Persona prompt forbids these explicitly but xai/grok-3-beta keeps hallucinating
+// concrete Madrid landmarks/universities. This is intent-AGNOSTIC: Alba should never name
+// these specific places, in or out of sexting. The orchestrator triggers a regeneration
+// (with reinforced instruction) when this fires; the safeResponse is the last-resort fallback.
+export const FORBIDDEN_BIO_LEAK = /\b(complutense|moncloa|uam|aut[oó]noma|carlos\s*iii|rey\s*juan\s*carlos|cu[aá]tro\s*caminos|arg[uü]elles)\b/i;
+export const BIO_LEAK_REASON = 'Filtra datos biográficos prohibidos (universidad/barrio Madrid)';
+
 // Quick string-based violation checks (no LLM needed, cheaper + faster)
 const QUICK_VIOLATIONS = [
   {
@@ -76,6 +84,11 @@ export function quickCheck(response, intent = '') {
   // Personal data leak during sexting roleplay (ADE, Complutense, Moncloa)
   if (intent === 'sexting_request' && SEXTING_PERSONAL_LEAK_PATTERN.test(response)) {
     return 'Filtra datos personales reales durante sexting roleplay (ADE/Complutense/Moncloa)';
+  }
+  // Bio leak: Madrid universities / barrios Persona alucina cuando le preguntan
+  // "dónde estudias / de dónde eres / dónde vives". Intent-agnostic.
+  if (FORBIDDEN_BIO_LEAK.test(response)) {
+    return BIO_LEAK_REASON;
   }
   return null;
 }
