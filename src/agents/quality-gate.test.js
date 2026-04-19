@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { quickCheck, buildQualityGatePrompt, runQualityGate, FORBIDDEN_BIO_LEAK, BIO_LEAK_REASON } from './quality-gate.js';
+import { quickCheck, buildQualityGatePrompt, runQualityGate, FORBIDDEN_BIO_LEAK, BIO_LEAK_REASON, isEmptyQuestion, EMPTY_QUESTION_REASON } from './quality-gate.js';
 
 vi.mock('../lib/llm-client.js', () => ({
   callAnthropic: vi.fn(),
@@ -201,6 +201,113 @@ describe('FORBIDDEN_BIO_LEAK — diminutives (BUG #3 v2)', () => {
     expect(result.ok).toBe(false);
     expect(result.reason).toBe(BIO_LEAK_REASON);
     expect(callAnthropic).not.toHaveBeenCalled();
+  });
+});
+
+// ─── HIGH-ROI FIX #2: empty question detector ────────────────────────────────
+
+describe('isEmptyQuestion — prohibited patterns (should return true)', () => {
+  it('detects "dime qué te mola"', () => {
+    expect(isEmptyQuestion('dime qué te mola')).toBe(true);
+  });
+
+  it('detects "dime que te mola rey 🔥" with emoji', () => {
+    expect(isEmptyQuestion('dime que te mola 🔥')).toBe(true);
+  });
+
+  it('detects "qué prefieres?"', () => {
+    expect(isEmptyQuestion('qué prefieres?')).toBe(true);
+  });
+
+  it('detects "qué te apetece"', () => {
+    expect(isEmptyQuestion('qué te apetece')).toBe(true);
+  });
+
+  it('detects "qué te apetece ver"', () => {
+    expect(isEmptyQuestion('qué te apetece ver')).toBe(true);
+  });
+
+  it('detects "cuál te gusta más?"', () => {
+    expect(isEmptyQuestion('cuál te gusta más?')).toBe(true);
+  });
+
+  it('detects "qué quieres ver?"', () => {
+    expect(isEmptyQuestion('qué quieres ver?')).toBe(true);
+  });
+
+  it('detects "qué buscas?"', () => {
+    expect(isEmptyQuestion('qué buscas?')).toBe(true);
+  });
+
+  it('detects empty question on last line only (multi-line response)', () => {
+    const resp = 'hola bebe\n\nqué te apetece 😈';
+    expect(isEmptyQuestion(resp)).toBe(true);
+  });
+
+  it('detects "dime qué te pone" variant', () => {
+    expect(isEmptyQuestion('dime qué te pone 🥵')).toBe(true);
+  });
+});
+
+describe('isEmptyQuestion — valid responses (should return false)', () => {
+  it('accepts response with concrete options (prices + tags)', () => {
+    const resp = 'tengo fotos de culo desde 7€, tetas desde 5€ o pack completo 25€. qué te mola?';
+    expect(isEmptyQuestion(resp)).toBe(false);
+  });
+
+  it('accepts response offering sexting tiers', () => {
+    const resp = 'sexting 5min 5€, 10min 10€, 15min 15€. cuál te apetece?';
+    expect(isEmptyQuestion(resp)).toBe(false);
+  });
+
+  it('accepts response with product id', () => {
+    const resp = 'mira el v_001 que lo tengo nuevo. qué buscas?';
+    expect(isEmptyQuestion(resp)).toBe(false);
+  });
+
+  it('accepts declarative response without question', () => {
+    expect(isEmptyQuestion('jaja claro bebe, me encanta')).toBe(false);
+  });
+
+  it('accepts response with explicit tag option', () => {
+    const resp = 'dime qué te mola más, tetas o culo?';
+    expect(isEmptyQuestion(resp)).toBe(false);
+  });
+});
+
+describe('quickCheck — empty question integration', () => {
+  it('flags empty question on catalog_question intent', () => {
+    expect(quickCheck('dime qué te mola', 'catalog_question')).toBe(EMPTY_QUESTION_REASON);
+  });
+
+  it('flags empty question on sale_intent_photos', () => {
+    expect(quickCheck('qué prefieres?', 'sale_intent_photos')).toBe(EMPTY_QUESTION_REASON);
+  });
+
+  it('flags empty question when intent is undefined', () => {
+    expect(quickCheck('qué te apetece 🔥')).toBe(EMPTY_QUESTION_REASON);
+  });
+
+  it('SKIPS empty question on small_talk intent', () => {
+    expect(quickCheck('dime qué te mola', 'small_talk')).toBeNull();
+  });
+
+  it('SKIPS empty question on sexting_active intent', () => {
+    expect(quickCheck('qué te apetece 😈', 'sexting_active')).toBeNull();
+  });
+
+  it('SKIPS empty question on payment_confirmation intent', () => {
+    expect(quickCheck('qué prefieres?', 'payment_confirmation')).toBeNull();
+  });
+
+  it('does NOT flag response with concrete options', () => {
+    const resp = 'tengo fotos desde 7€ bebe. qué te mola?';
+    expect(quickCheck(resp, 'catalog_question')).toBeNull();
+  });
+
+  it('EMPTY_QUESTION_REASON is a non-empty string', () => {
+    expect(typeof EMPTY_QUESTION_REASON).toBe('string');
+    expect(EMPTY_QUESTION_REASON.length).toBeGreaterThan(0);
   });
 });
 

@@ -2,7 +2,7 @@ import { agentLogger } from './lib/logger.js';
 import { getOrCreateClient, getClientById, updateProfile, updateFraudScore, markClientCatalogSeen } from './agents/profile-manager.js';
 import { runRouter } from './agents/router.js';
 import { runPersona } from './agents/persona.js';
-import { runQualityGate, FORBIDDEN_BIO_LEAK, BIO_LEAK_REASON } from './agents/quality-gate.js';
+import { runQualityGate, FORBIDDEN_BIO_LEAK, BIO_LEAK_REASON, EMPTY_QUESTION_REASON } from './agents/quality-gate.js';
 import { saveMessage, getHistory, normalizeHistory, logQualityGateFailure, getLastInteractionDate, countPriorMessages } from './lib/conversation.js';
 import { fragmentMessage, getPacerConfig } from './agents/message-pacer.js';
 import { confirmBizumByClient } from './agents/payment-verifier.js';
@@ -790,11 +790,15 @@ export async function handleMessage({
   if (!qg1.ok) {
     log.warn({ reason: qg1.reason }, 'quality gate: first pass failed — regenerating');
 
-    const buildRetryInstruction = (reason) => (
-      reason === BIO_LEAK_REASON
-        ? 'Tu respuesta anterior nombró una universidad o un barrio CONCRETO de Madrid (Complutense, UAM, Carlos III, Moncloa, Argüelles, Cuatro Caminos…). PROHIBIDO ABSOLUTO mencionar lugares reales. Si te preguntan dónde estudias / vives / de dónde eres, responde de forma vaga y coqueta: "estudio en Madrid bebe, qué más da" o "soy de Madrid pero a ti qué te importa eh 😈". Sin nombres propios. NUNCA.'
-        : `Tu respuesta anterior fue rechazada. Razón: "${reason}". IMPORTANTE: reestructura la frase entera, no solo borra el dato problemático.`
-    );
+    const buildRetryInstruction = (reason) => {
+      if (reason === BIO_LEAK_REASON) {
+        return 'Tu respuesta anterior nombró una universidad o un barrio CONCRETO de Madrid (Complutense, UAM, Carlos III, Moncloa, Argüelles, Cuatro Caminos…). PROHIBIDO ABSOLUTO mencionar lugares reales. Si te preguntan dónde estudias / vives / de dónde eres, responde de forma vaga y coqueta: "estudio en Madrid bebe, qué más da" o "soy de Madrid pero a ti qué te importa eh 😈". Sin nombres propios. NUNCA.';
+      }
+      if (reason === EMPTY_QUESTION_REASON) {
+        return 'Tu respuesta terminó con una pregunta abierta (tipo "dime qué te mola" / "qué te apetece") SIN OFRECER OPCIONES. Reescribe la respuesta acompañando la pregunta de 2-3 OPCIONES CONCRETAS: tags (culo, tetas, coño, lencería, tacones, ducha), o productos concretos con precio (ej: "tengo fotos desde 7€, videos desde 10€, sexting 5/10/15 min"). La pregunta debe ir acompañada de opciones en el MISMO mensaje.';
+      }
+      return `Tu respuesta anterior fue rechazada. Razón: "${reason}". IMPORTANTE: reestructura la frase entera, no solo borra el dato problemático.`;
+    };
 
     let retryInstruction = buildRetryInstruction(qg1.reason);
     let retryResponse = await runPersona(savedText, history, updatedClient ?? client, resolvedIntent, retryInstruction);

@@ -40,6 +40,55 @@ const SEXTING_PERSONAL_LEAK_PATTERN = /\b(ade|complutense|moncloa)\b/i;
 export const FORBIDDEN_BIO_LEAK = /\b(complu(tense)?|moncloa|uam|aut[oó]noma|carlos\s*iii|rey\s*juan\s*carlos|cu[aá]tro\s*caminos|arg[uü]elles)\b/i;
 export const BIO_LEAK_REASON = 'Filtra datos biográficos prohibidos (universidad/barrio Madrid)';
 
+// HIGH-ROI FIX #2 — empty question detector
+// Alba frequently ends responses with open questions that don't give the
+// client any concrete options to pick from (e.g. "dime qué te mola rey 🔥").
+// This is the single largest failure mode in the baseline (affects B1, B3, B4,
+// D4, G1, H1). When the LAST non-empty line/fragment of the response matches
+// an "empty question" pattern AND the FULL response does not contain any
+// concrete option (price in €, product tag, product id, pack/video title),
+// the gate rejects it so the orchestrator regenerates with a reinforced
+// instruction to offer options.
+export const EMPTY_QUESTION_PATTERNS = [
+  /^\s*dime\s+qu[eé]\s+te\s*(mola|buscas|apetece|gusta|pone)\s*[\?]*\s*[🔥😈😘✨💋🥵]*\s*$/i,
+  /^\s*qu[eé]\s+prefieres\s*[\?]*\s*[🔥😈😘✨💋🥵]*\s*$/i,
+  /^\s*qu[eé]\s+te\s+(apetece|mola|gusta)(\s+(ver|hacer))?\s*[\?]*\s*[🔥😈😘✨💋🥵]*\s*$/i,
+  /^\s*cu[aá]l\s+te\s+(gusta|mola|apetece)(\s+m[aá]s)?\s*[\?]*\s*[🔥😈😘✨💋🥵]*\s*$/i,
+  /^\s*qu[eé]\s+quieres\s*(ver)?\s*[\?]*\s*[🔥😈😘✨💋🥵]*\s*$/i,
+  /^\s*qu[eé]\s+buscas\s*[\?]*\s*[🔥😈😘✨💋🥵]*\s*$/i,
+];
+
+export const EMPTY_QUESTION_REASON = 'empty_question';
+
+// Intents where an empty "what do you want?" question is legitimate (small
+// talk / post-pay chit-chat / sexting already started — Persona drives).
+const EMPTY_QUESTION_SKIP_INTENTS = new Set([
+  'small_talk',
+  'sexting_active',
+  'payment_confirmation',
+  'payment_method_selection',
+]);
+
+// Signals that indicate the response DOES offer concrete options — if any
+// of these appear anywhere in the response, the empty-question check passes.
+const CONCRETE_OPTION_PATTERN = /(\d+\s*€|\bv_\d+\b|\bpk_\d+\b|\bst_\d+min\b|\bculo\b|\btetas?\b|\bcoño\b|\blencer[ií]a\b|\btacones\b|\bducha\b|\bsquirt\b|bizum|crypto|stars|paypal|pack|sexting|videollamada|personaliz|videos?\b|fotos?\b)/i;
+
+/**
+ * Detect an empty question in the response (pure function).
+ * @param {string} response Full Persona output (pre-fragmentation).
+ * @returns {boolean} true when the final line is an open-ended question and
+ *                    the overall response lacks any concrete option.
+ */
+export function isEmptyQuestion(response) {
+  if (!response || typeof response !== 'string') return false;
+  // If the response already carries concrete options anywhere, it's not empty.
+  if (CONCRETE_OPTION_PATTERN.test(response)) return false;
+  const lines = response.split(/[\n\r]+/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) return false;
+  const lastLine = lines[lines.length - 1];
+  return EMPTY_QUESTION_PATTERNS.some((re) => re.test(lastLine));
+}
+
 // Quick string-based violation checks (no LLM needed, cheaper + faster)
 const QUICK_VIOLATIONS = [
   {
@@ -92,6 +141,13 @@ export function quickCheck(response, intent = '') {
   // "dónde estudias / de dónde eres / dónde vives". Intent-agnostic.
   if (FORBIDDEN_BIO_LEAK.test(response)) {
     return BIO_LEAK_REASON;
+  }
+  // HIGH-ROI FIX #2 — empty question without concrete options.
+  // Triggered only for intents where Alba is expected to advance the sale
+  // (catalog questions, negotiations). Small-talk / sexting / payment branches
+  // are skipped to avoid over-triggering.
+  if (!EMPTY_QUESTION_SKIP_INTENTS.has(intent) && isEmptyQuestion(response)) {
+    return EMPTY_QUESTION_REASON;
   }
   return null;
 }
