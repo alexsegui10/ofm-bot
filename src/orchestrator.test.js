@@ -92,8 +92,14 @@ describe('handleMessage — E2E pipeline (mocked LLMs)', () => {
     expect(result.intent).toBe('small_talk');
     expect(result.fragments).toBeDefined();
     expect(result.fragments.length).toBeGreaterThan(0);
-    // New client: fixed greeting used, Grok skipped
-    expect(GREETINGS_NEW_CLIENT).toContain(result.fragments[0]);
+    // New client: fixed greeting used, Grok skipped. Greeting is randomized
+    // and the pacer may split it into multiple fragments (commas), so we
+    // assert the FULL joined output matches one of the canonical greetings.
+    const joined = result.fragments.join(' ').replace(/\s+/g, ' ').trim();
+    const matched = GREETINGS_NEW_CLIENT.some(
+      (g) => joined === g || joined.startsWith(g),
+    );
+    expect(matched).toBe(true);
     expect(callOpenRouter).not.toHaveBeenCalled();
   });
 
