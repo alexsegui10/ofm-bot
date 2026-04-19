@@ -19,7 +19,7 @@ vi.mock('./lib/db.js', () => ({
   closePool: vi.fn(),
 }));
 
-import { buildSextingV2Instruction } from './orchestrator.js';
+import { buildSextingV2Instruction, buildSextingKickoffInstruction } from './orchestrator.js';
 
 describe('buildSextingV2Instruction', () => {
   const base = { phase: 'warm_up', clientState: 'engaged', roleplay: null };
@@ -93,5 +93,53 @@ describe('buildSextingV2Instruction', () => {
   it('falls back to warm_up tone when phase is unknown', () => {
     const out = buildSextingV2Instruction({ phase: 'unknown', clientState: 'engaged', roleplay: null });
     expect(out).toMatch(/warm_up/);
+  });
+});
+
+describe('buildSextingKickoffInstruction (FIX F1)', () => {
+  it('declares this is a KICKOFF — client did not write yet', () => {
+    const out = buildSextingKickoffInstruction({ roleplay: null, templateId: 'st_5min' });
+    expect(out).toMatch(/KICKOFF/);
+    expect(out).toMatch(/no ha escrito nada/i);
+  });
+
+  it('includes the template id so the persona can size the message', () => {
+    const out = buildSextingKickoffInstruction({ roleplay: null, templateId: 'st_15min' });
+    expect(out).toContain('st_15min');
+  });
+
+  it('forbids greeting and "vamos allá"-style payment ack', () => {
+    const out = buildSextingKickoffInstruction({ roleplay: null, templateId: 'st_5min' });
+    expect(out).toMatch(/Saludar/);
+    expect(out).toMatch(/vamos all[áa]/i);
+  });
+
+  it('forbids open questions in the kickoff (TÚ DIRIGES)', () => {
+    const out = buildSextingKickoffInstruction({ roleplay: null, templateId: 'st_5min' });
+    expect(out).toMatch(/Preguntar al cliente/);
+    expect(out).toMatch(/qu[eé] quieres/);
+  });
+
+  it('forbids commercial promises (no link, no price, no other content)', () => {
+    const out = buildSextingKickoffInstruction({ roleplay: null, templateId: 'st_5min' });
+    expect(out).toMatch(/precio/);
+    expect(out).toMatch(/tengo esto\/algo para ti/);
+  });
+
+  it('reinforces ROL when roleplay is provided', () => {
+    const out = buildSextingKickoffInstruction({ roleplay: 'profesora', templateId: 'st_5min' });
+    expect(out).toMatch(/EN ROL "profesora"/);
+    expect(out).toMatch(/no preguntes detalles del setup/i);
+  });
+
+  it('falls back to neutral Alba when roleplay is null', () => {
+    const out = buildSextingKickoffInstruction({ roleplay: null, templateId: 'st_5min' });
+    expect(out).toMatch(/Alba neutra/);
+  });
+
+  it('asks for warm_up phase tone (TÚ describes lo que sientes)', () => {
+    const out = buildSextingKickoffInstruction({ roleplay: null, templateId: 'st_5min' });
+    expect(out).toMatch(/warm_up/);
+    expect(out).toMatch(/primera persona/i);
   });
 });

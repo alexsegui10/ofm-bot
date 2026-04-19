@@ -1,14 +1,33 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // db.js debe estar mockeado para que no intente conectarse en tests unitarios
 vi.mock('./db.js', () => ({ query: vi.fn() }));
+vi.mock('../config/products.js', () => ({
+  getProducts: () => ({
+    sexting_templates: [
+      {
+        id: 'st_5min',
+        duracion_min: 5,
+        cadencia_target: { mensajes_por_media_objetivo: 2.5, mensajes_max_sin_media: 4, min_segundos_entre_medias: 30 },
+        phases_order: ['warm_up', 'teasing', 'escalada', 'climax', 'cool_down'],
+        phases_duration_target_seg: { warm_up: 45, teasing: 75, escalada: 120, climax: 45, cool_down: 15 },
+        media_pool: [
+          { media_id: 'ext_m_001', phase_hint: 'warm_up', order_hint: 1, caption_base: 'cap_w1', is_climax_media: false },
+          { media_id: 'ext_m_002', phase_hint: 'teasing', order_hint: 2, caption_base: 'cap_t1', is_climax_media: false },
+        ],
+      },
+    ],
+  }),
+}));
 
+import { query } from './db.js';
 import {
   inferPhaseFromTime,
   shouldSendMediaNow,
   selectNextMedia,
   markMediaUsed,
   analyzeClientMessage,
+  emitInitialKickoff,
 } from './sexting-conductor.js';
 
 // Template mínimo para tests (espejo de products.json st_10min)
@@ -200,5 +219,100 @@ describe('analyzeClientMessage', () => {
     const a = analyzeClientMessage('dime cómo estás');
     expect(a.finished).toBe(false);
     expect(a.roleplay).toBeNull();
+  });
+});
+
+// ─── emitInitialKickoff ─────────────────────────────────────────────────────
+describe('emitInitialKickoff', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  function mockState({ media_sent_count = 0, ended_at = null, roleplay_context = null, current_phase = 'warm_up', client_state = 'engaged' } = {}) {
+    return {
+      session_id: 1,
+      template_id: 'st_5min',
+      media_sent_count,
+      ended_at,
+      roleplay_context,
+      current_phase,
+      client_state,
+      messages_since_last_media: 0,
+      media_pool_snapshot: [
+        { media_id: 'ext_m_001', phase_hint: 'warm_up', order_hint: 1, caption_base: 'cap_w1', is_climax_media: false, used: false },
+        { media_id: 'ext_m_002', phase_hint: 'teasing', order_hint: 2, caption_base: 'cap_t1', is_climax_media: false, used: false },
+      ],
+    };
+  }
+
+  it('selecciona la primera media warm_up del pool y la marca usada', async () => {
+    query.mockResolvedValueOnce({ rows: [mockState()] });   // SELECT loadState
+    query.mockResolvedValueOnce({ rows: [] });              // UPDATE state
+
+    const r = await emitInitialKickoff({ sessionId: 1 });
+
+    expect(r.action).toBe('send_kickoff');
+    expect(r.mediaId).toBe('ext_m_001');
+    expect(r.captionBase).toBe('cap_w1');
+    expect(r.phase).toBe('warm_up');
+    expect(r.clientState).toBe('engaged');
+
+    // Verifica que UPDATE se llamó con media_pool_snapshot que marca ext_m_001 como used.
+    const updateCall = query.mock.calls[1];
+    const updateSql = updateCall[0];
+    expect(updateSql).toMatch(/UPDATE sexting_sessions_state/);
+    const updateValues = updateCall[1];
+    // session_id en $1, valores van en $2..$N
+    const poolJson = updateValues.find((v) => typeof v === 'string' && v.includes('ext_m_001'));
+    expect(poolJson).toBeTruthy();
+    expect(poolJson).toMatch(/"used":true/);
+  });
+
+  it('preserva roleplay_context en la respuesta', async () => {
+    query.mockResolvedValueOnce({ rows: [mockState({ roleplay_context: 'profesora' })] });
+    query.mockResolvedValueOnce({ rows: [] });
+    const r = await emitInitialKickoff({ sessionId: 1 });
+    expect(r.roleplay).toBe('profesora');
+  });
+
+  it('idempotente: si media_sent_count > 0 → action=skip, no toca DB', async () => {
+    query.mockResolvedValueOnce({ rows: [mockState({ media_sent_count: 1 })] });
+    const r = await emitInitialKickoff({ sessionId: 1 });
+    expect(r.action).toBe('skip');
+    expect(r.reason).toBe('already_kicked_off');
+    expect(query).toHaveBeenCalledTimes(1); // solo SELECT, no UPDATE
+  });
+
+  it('idempotente: sesión cerrada → action=skip', async () => {
+    query.mockResolvedValueOnce({ rows: [mockState({ ended_at: new Date().toISOString() })] });
+    const r = await emitInitialKickoff({ sessionId: 1 });
+    expect(r.action).toBe('skip');
+    expect(r.reason).toBe('session_already_ended');
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it('si no hay media warm_up disponible → cae al primer disponible por order_hint', async () => {
+    const s = mockState();
+    s.media_pool_snapshot[0].used = true;  // ext_m_001 ya usada → solo queda teasing
+    query.mockResolvedValueOnce({ rows: [s] });
+    query.mockResolvedValueOnce({ rows: [] });
+    const r = await emitInitialKickoff({ sessionId: 1 });
+    expect(r.action).toBe('send_kickoff');
+    expect(r.mediaId).toBe('ext_m_002');  // teasing, único disponible
+  });
+
+  it('pool vacío → action=send_kickoff con mediaId=null', async () => {
+    const s = mockState();
+    s.media_pool_snapshot.forEach((m) => { m.used = true; });
+    query.mockResolvedValueOnce({ rows: [s] });
+    const r = await emitInitialKickoff({ sessionId: 1 });
+    expect(r.action).toBe('send_kickoff');
+    expect(r.reason).toBe('pool_empty');
+    expect(r.mediaId).toBeNull();
+    expect(r.captionBase).toBeNull();
+    expect(query).toHaveBeenCalledTimes(1); // solo SELECT (no UPDATE en pool vacío)
+  });
+
+  it('throws si no existe state para el sessionId', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    await expect(emitInitialKickoff({ sessionId: 999 })).rejects.toThrow(/no state for session 999/);
   });
 });

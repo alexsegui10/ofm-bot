@@ -2,7 +2,7 @@ import { agentLogger } from '../lib/logger.js';
 import { handleMessage } from '../orchestrator.js';
 import { queueMessage, sendFragments, getPacerConfig } from '../agents/message-pacer.js';
 import { sendStarsInvoice } from '../lib/payments/telegram-stars.js';
-import { readBusinessMessage } from '../lib/telegram.js';
+import { readBusinessMessage, sendMedia } from '../lib/telegram.js';
 import { getActiveSession } from '../agents/sexting-conductor.js';
 
 const log = agentLogger('business');
@@ -177,6 +177,22 @@ export function registerBusinessHandlers(bot, api = bot.api) {
               parsed.chatId,
               getPacerConfig(),
             );
+          }
+
+          // Sexting v2 kickoff media: sent right after the warm_up text fragments
+          // so the client sees text → photo/video as a single coherent arrival.
+          if (result.kickoffMedia?.fileId) {
+            try {
+              await sendMedia(
+                parsed.businessConnectionId,
+                parsed.chatId,
+                result.kickoffMedia.type,
+                result.kickoffMedia.fileId,
+                result.kickoffMedia.caption,
+              );
+            } catch (err) {
+              log.error({ chat_id: parsed.chatId, err }, 'kickoff media send failed');
+            }
           }
 
           // Send Telegram Stars invoice if the sales agent returned one

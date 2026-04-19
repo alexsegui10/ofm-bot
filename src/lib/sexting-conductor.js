@@ -8,9 +8,16 @@
  *       al cliente. Lo único "fijo" son las fotos/videos del pool con sus
  *       captions base, y la IA decide cuándo enviarlas respetando cadencia.
  *
+ * Excepción al event-driven: KICKOFF post-pago. Cuando el pago se confirma,
+ * el orchestrator no espera al siguiente mensaje del cliente — invoca
+ * `emitInitialKickoff(sessionId)` y arranca con 1 texto warm_up + 1 media del
+ * pool. El trigger es el pago, no un mensaje. A partir de ahí, todo lo demás
+ * sigue siendo event-driven (handleClientTurn).
+ *
  * Integración actual:
  *   - El orchestrator crea la sesión con `startSextingSessionV2(...)` al
- *     confirmarse el pago de una plantilla (st_5min/st_10min/st_15min).
+ *     confirmarse el pago de una plantilla (st_5min/st_10min/st_15min) y
+ *     después invoca `emitInitialKickoff(...)` para mandar el primer mensaje.
  *   - Cada mensaje entrante del cliente durante la sesión va a `handleClientTurn`.
  *   - El timer de fin (`duracion_min * 60s`) dispara `finishSexting('time_up')`.
  *   - Las medias se resuelven con `content-dispatcher.resolveSextingMedia`.
@@ -282,6 +289,92 @@ export async function startSextingSessionV2({
   }, 'sexting v2: session started');
 
   return state;
+}
+
+/**
+ * Arranque automático post-pago de la sesión v2.
+ *
+ * No es event-driven (ver comentario al inicio del módulo): el trigger es el
+ * pago confirmado, no un mensaje del cliente. Selecciona la primera media del
+ * pool con `phase_hint='warm_up'` (fallback a la primera disponible por
+ * `order_hint`), la marca como usada y devuelve la "orden" para que el caller
+ * (orchestrator) genere el texto via Persona y mande media + texto.
+ *
+ * Idempotente: si la sesión ya emitió media (media_sent_count > 0), devuelve
+ * `{ action: 'skip', reason: 'already_kicked_off' }` sin tocar nada.
+ *
+ * @param {{ sessionId: number, now?: number }} params
+ * @returns {Promise<{
+ *   action: 'send_kickoff' | 'skip',
+ *   reason: string,
+ *   mediaId?: string|null,
+ *   captionBase?: string|null,
+ *   phase: string,
+ *   clientState: string,
+ *   roleplay: string|null,
+ * }>}
+ */
+export async function emitInitialKickoff({ sessionId, now = Date.now() }) {
+  const state = await loadState(sessionId);
+  if (!state) throw new Error(`emitInitialKickoff: no state for session ${sessionId}`);
+  if (state.ended_at) {
+    return {
+      action: 'skip',
+      reason: 'session_already_ended',
+      phase: state.current_phase,
+      clientState: state.client_state,
+      roleplay: state.roleplay_context,
+    };
+  }
+  if (state.media_sent_count > 0) {
+    return {
+      action: 'skip',
+      reason: 'already_kicked_off',
+      phase: state.current_phase,
+      clientState: state.client_state,
+      roleplay: state.roleplay_context,
+    };
+  }
+
+  // Selección: preferimos warm_up; si no hay (pool raro), caemos al primero por order_hint.
+  const pool = parsePool(state.media_pool_snapshot);
+  const available = pool.filter((m) => !m.used);
+  const warmUps = available.filter((m) => m.phase_hint === 'warm_up');
+  const pick = (warmUps.length > 0 ? warmUps : available)
+    .sort((a, b) => a.order_hint - b.order_hint)[0] || null;
+
+  if (!pick) {
+    // Pool vacío — devolvemos kickoff sin media. El caller mandará solo texto.
+    return {
+      action: 'send_kickoff',
+      reason: 'pool_empty',
+      mediaId: null,
+      captionBase: null,
+      phase: 'warm_up',
+      clientState: state.client_state || 'engaged',
+      roleplay: state.roleplay_context,
+    };
+  }
+
+  const newPool = markMediaUsed(pool, pick.media_id);
+  await updateState(sessionId, {
+    current_phase: 'warm_up',
+    client_state: 'engaged',
+    media_pool_snapshot: newPool,
+    media_sent_count: state.media_sent_count + 1,
+    messages_since_last_media: 0,
+    last_media_sent_at: new Date(now),
+  });
+
+  return {
+    action: 'send_kickoff',
+    reason: 'kickoff_warm_up',
+    mediaId: pick.media_id,
+    captionBase: pick.caption_base,
+    phase: 'warm_up',
+    clientState: 'engaged',
+    roleplay: state.roleplay_context,
+  };
 }
 
 /**

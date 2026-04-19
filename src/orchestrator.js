@@ -253,6 +253,35 @@ export function buildSextingV2Instruction(turn) {
   return lines.join('\n');
 }
 
+/**
+ * Build the Persona instruction for the FIRST message of a sexting v2 session
+ * (post-payment kickoff). This is invoked exactly once per session, with no
+ * client message yet — the model must arranque la acción by itself.
+ *
+ * Exported for unit testing.
+ *
+ * @param {{ roleplay: string|null, templateId: string }} params
+ * @returns {string}
+ */
+export function buildSextingKickoffInstruction({ roleplay, templateId }) {
+  const roleplayLine = roleplay
+    ? `Estás EN ROL "${roleplay}" desde el primer segundo — NO preguntes detalles del setup ("qué asignatura", "qué te duele"), YA estás dentro del personaje. Arranca describiendo lo que TÚ haces o sientes desde ese rol.`
+    : 'Estás EN ROL Alba neutra. Arranca describiendo lo que TÚ haces o sientes en este momento.';
+  return [
+    `KICKOFF DE SEXTING (plantilla ${templateId}). El cliente acaba de pagar y entra a la sesión. NO ha escrito nada todavía — TÚ inicias.`,
+    'Genera 1 mensaje BREVE (1-2 frases máximo, total ~120 caracteres) en FASE warm_up: describe lo que TÚ estás haciendo o sintiendo ahora mismo, en primera persona, caliente pero sin saltar a explícito.',
+    'PROHIBIDO ABSOLUTAMENTE en este mensaje:',
+    '- Saludar ("hola", "buenas", "ey bebe").',
+    '- Preguntar al cliente nada ("qué quieres", "te gusta", "cómo lo hacemos").',
+    '- Confirmar el pago o mencionar dinero, link, bizum, "vamos allá".',
+    '- Mencionar precio, otro contenido, otra plantilla.',
+    '- Decir "tengo esto/algo para ti" o cualquier promesa comercial.',
+    'EJEMPLOS de tono correcto: "estoy en la cama tocándome los pezones pensando en ti...", "se me está poniendo todo mojado de imaginarte aquí 🔥", "acabo de salir de la ducha y aún me siento caliente bebe".',
+    roleplayLine,
+    'Después de esta frase tú irás recibiendo mensajes del cliente y respondiendo en el loop normal — solo necesitas el arranque.',
+  ].join('\n');
+}
+
 // v2 intents routed through the products.json catalog (resolved via content-dispatcher).
 const V2_LIST_INTENTS    = new Set(['ask_video_list', 'ask_pack_list']);
 const V2_CHOOSE_INTENTS  = new Set(['choose_video', 'choose_pack', 'buy_sexting_template']);
@@ -543,27 +572,56 @@ export async function handleMessage({
         log.warn({ err, client_id: client.id }, 'clearPendingProduct after bizum failed (non-fatal)');
       }
 
-      // FIX 3 (T3): if the pending product was a sexting template, start the
-      // v2 engine right after confirming the bizum claim. The session message
-      // is appended to the bizum ack so the client sees both in the same turn.
+      // FIX 3 (T3) + FIX F1: if the pending product was a sexting template,
+      // start the v2 engine right after confirming the bizum claim AND emit
+      // the kickoff (warm_up text via Persona + first warm_up media from pool).
+      // Trigger = payment, not a client message — see emitInitialKickoff doc.
       let extraFragments = [];
+      let kickoffMedia = null;
       if (pendingForSexting && typeof pendingForSexting.productId === 'string'
           && pendingForSexting.productId.startsWith('st_')) {
         try {
           const roleplay = detectRoleplayFromHistory(history, savedText);
-          await startSextingV2ForClient({
+          const { kickoff } = await startSextingV2ForClient({
             clientId: client.id,
             templateId: pendingForSexting.productId,
             roleplayContext: roleplay,
           });
-          const kickoff = roleplay
-            ? `vamos allá bebe, soy tu ${roleplay} 😈`
-            : 'vamos allá bebe 🔥';
-          await saveMessage(client.id, 'assistant', kickoff, 'sexting_active');
-          extraFragments = fragmentMessage(kickoff, getPacerConfig());
+
+          // Generate kickoff text via Persona (sexting_active + warm_up steering).
+          const kickoffInstruction = buildSextingKickoffInstruction({
+            roleplay: kickoff.roleplay,
+            templateId: pendingForSexting.productId,
+          });
+          let kickoffText;
+          try {
+            kickoffText = await runPersona(
+              '[KICKOFF SEXTING — el cliente acaba de pagar, arranca tú la sesión]',
+              [], updatedClient ?? client, 'sexting_active', kickoffInstruction,
+            );
+          } catch (err) {
+            log.warn({ err, client_id: client.id }, 'sexting v2 kickoff: Persona failed, using fallback text');
+            kickoffText = roleplay
+              ? `mmm bebe, ya soy tu ${roleplay} y estoy mojadísima pensando en ti 🔥`
+              : 'estoy en la cama bebe, ya empiezo a tocarme pensando en ti 🔥';
+          }
+          const qg = await runQualityGate(kickoffText, updatedClient ?? client, 'sexting_active');
+          const finalKickoffText = qg.ok ? kickoffText : (qg.safeResponse || 'mmm sigue conmigo bebe 🔥');
+          await saveMessage(client.id, 'assistant', finalKickoffText, 'sexting_active');
+          extraFragments = fragmentMessage(finalKickoffText, getPacerConfig());
+
+          // Attach media (resolved by the bridge). Caption stays short via captionBase.
+          if (kickoff.action === 'send_kickoff' && kickoff.mediaFile) {
+            kickoffMedia = {
+              type: kickoff.mediaFile.tipo,
+              fileId: kickoff.mediaFile.file_id,
+              caption: kickoff.captionBase || '',
+            };
+          }
           log.info({
-            client_id: client.id, template_id: pendingForSexting.productId, roleplay,
-          }, 'sexting v2: started after payment_confirmation');
+            client_id: client.id, template_id: pendingForSexting.productId,
+            roleplay, kickoff_action: kickoff.action, has_media: !!kickoffMedia,
+          }, 'sexting v2: kickoff emitted after payment_confirmation');
         } catch (err) {
           log.error({
             err, client_id: client.id, template_id: pendingForSexting.productId,
@@ -574,8 +632,8 @@ export async function handleMessage({
       await saveMessage(client.id, 'assistant', bizumMsg, intent);
       const cfg = getPacerConfig();
       const frags = [...fragmentMessage(bizumMsg, cfg), ...extraFragments];
-      log.info({ chat_id: chatId, intent, fragments: frags.length, latency_ms: Date.now() - start }, 'pipeline complete (bizum)');
-      return { fragments: frags, intent };
+      log.info({ chat_id: chatId, intent, fragments: frags.length, has_kickoff_media: !!kickoffMedia, latency_ms: Date.now() - start }, 'pipeline complete (bizum)');
+      return { fragments: frags, intent, kickoffMedia };
     }
   }
 

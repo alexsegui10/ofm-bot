@@ -20,7 +20,7 @@
 import { query } from './db.js';
 import { agentLogger } from './logger.js';
 import { getProducts } from '../config/products.js';
-import { startSextingSessionV2 } from './sexting-conductor.js';
+import { startSextingSessionV2, emitInitialKickoff, resolveMediaFile } from './sexting-conductor.js';
 
 const log = agentLogger('sexting-bridge');
 
@@ -89,7 +89,20 @@ export async function getActiveV2SessionForClient(clientId) {
  *   roleplayContext?: string|null,
  *   onFinish?: (sessionId: number, reason: string) => Promise<void>,
  * }} params
- * @returns {Promise<{ sessionId: number, state: object }>}
+ * @returns {Promise<{
+ *   sessionId: number,
+ *   state: object,
+ *   kickoff: {
+ *     action: 'send_kickoff'|'skip',
+ *     reason: string,
+ *     mediaId: string|null,
+ *     captionBase: string|null,
+ *     mediaFile: { file_id: string, tipo: string }|null,
+ *     phase: string,
+ *     clientState: string,
+ *     roleplay: string|null,
+ *   }
+ * }>}
  */
 export async function startSextingV2ForClient({
   clientId,
@@ -124,10 +137,34 @@ export async function startSextingV2ForClient({
     roleplayContext,
   });
 
+  // 3. Kickoff post-pago (excepción event-driven, ver doc del conductor):
+  //    selecciona media warm_up + marca como usada. Texto lo genera el caller.
+  let kickoff = {
+    action: 'skip', reason: 'no_kickoff_attempted',
+    mediaId: null, captionBase: null, mediaFile: null,
+    phase: 'warm_up', clientState: 'engaged', roleplay: roleplayContext,
+  };
+  try {
+    const order = await emitInitialKickoff({ sessionId });
+    let mediaFile = null;
+    if (order.action === 'send_kickoff' && order.mediaId) {
+      try {
+        mediaFile = await resolveMediaFile(order.mediaId);
+      } catch (err) {
+        log.warn({ err, session_id: sessionId, media_id: order.mediaId }, 'kickoff: resolveMediaFile failed (continuing without media)');
+        mediaFile = null;
+      }
+    }
+    kickoff = { ...order, mediaFile };
+  } catch (err) {
+    log.error({ err, session_id: sessionId }, 'kickoff: emitInitialKickoff failed (continuing without kickoff)');
+  }
+
   log.info({
     client_id: clientId, session_id: sessionId, template_id: templateId,
     roleplay_context: roleplayContext,
-  }, 'sexting v2: started for client (business row + state)');
+    kickoff_action: kickoff.action, kickoff_media: kickoff.mediaId,
+  }, 'sexting v2: started for client (business row + state + kickoff)');
 
-  return { sessionId, state };
+  return { sessionId, state, kickoff };
 }
