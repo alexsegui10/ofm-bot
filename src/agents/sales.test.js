@@ -261,3 +261,81 @@ describe('createOfferFromProduct', () => {
     }));
   });
 });
+
+// ─── BUG CRÍTICO #1: runSales/createOfferFromProduct must echo productId+amountEur ──
+// (so the orchestrator can persist them via setPendingProduct(clientId, productId, amountEur)
+//  without throwing "productId required").
+
+describe('runSales return shape — productId + amountEur echoed back', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    createInvoice.mockResolvedValue({ id: 'inv', invoice_url: 'https://np/x', pay_currency: 'usdttrc20' });
+    getAvailableCurrencies.mockResolvedValue({ payCurrency: 'usdttrc20', available: ['usdttrc20'], source: 'forced' });
+  });
+
+  it('crypto echoes productId + amountEur + productType + description', async () => {
+    const r = await runSales({
+      intent: 'choose_video', client: CLIENT, amountEur: 20,
+      productType: 'video', productId: 'v_001', description: 'squirt',
+      paymentMethod: 'crypto',
+    });
+    expect(r.productId).toBe('v_001');
+    expect(r.amountEur).toBe(20);
+    expect(r.productType).toBe('video');
+    expect(r.description).toBe('squirt');
+  });
+
+  it('bizum echoes productId + amountEur + productType + description', async () => {
+    const r = await runSales({
+      intent: 'choose_pack', client: CLIENT, amountEur: 12,
+      productType: 'pack', productId: 'pk_002', description: 'tetas en lencería',
+      paymentMethod: 'bizum',
+    });
+    expect(r.productId).toBe('pk_002');
+    expect(r.amountEur).toBe(12);
+    expect(r.productType).toBe('pack');
+    expect(r.description).toBe('tetas en lencería');
+  });
+
+  it('stars echoes productId + amountEur (already worked, regression guard)', async () => {
+    const r = await runSales({
+      intent: 'buy_sexting_template', client: CLIENT, amountEur: 15,
+      productType: 'sexting', productId: 'st_5min', description: 'Sexting 5 min',
+      paymentMethod: 'stars',
+    });
+    expect(r.productId).toBe('st_5min');
+    expect(r.amountEur).toBe(15);
+  });
+});
+
+describe('createOfferFromProduct → offer carries productId + amountEur for setPendingProduct', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    createInvoice.mockResolvedValue({ id: 'inv', invoice_url: 'https://np/x', pay_currency: 'usdttrc20' });
+    getAvailableCurrencies.mockResolvedValue({ payCurrency: 'usdttrc20', available: ['usdttrc20'], source: 'forced' });
+  });
+
+  it('v_NNN → offer.productId = "v_001", offer.amountEur = 20 (bizum)', async () => {
+    const offer = await createOfferFromProduct({ productId: 'v_001', client: CLIENT, paymentMethod: 'bizum' });
+    expect(offer.productId).toBe('v_001');
+    expect(offer.amountEur).toBe(20);
+  });
+
+  it('pk_NNN → offer.productId = "pk_002", offer.amountEur = 12 (crypto)', async () => {
+    const offer = await createOfferFromProduct({ productId: 'pk_002', client: CLIENT, paymentMethod: 'crypto' });
+    expect(offer.productId).toBe('pk_002');
+    expect(offer.amountEur).toBe(12);
+  });
+
+  it('st_Nmin → offer.productId = "st_10min", offer.amountEur = 30 (bizum)', async () => {
+    const offer = await createOfferFromProduct({ productId: 'st_10min', client: CLIENT, paymentMethod: 'bizum' });
+    expect(offer.productId).toBe('st_10min');
+    expect(offer.amountEur).toBe(30);
+  });
+
+  it('singles:tag:count → offer.productId = "singles:tetas:4", offer.amountEur = 19 (bizum)', async () => {
+    const offer = await createOfferFromProduct({ productId: 'singles:tetas:4', client: CLIENT, paymentMethod: 'bizum' });
+    expect(offer.productId).toBe('singles:tetas:4');
+    expect(offer.amountEur).toBe(19);
+  });
+});

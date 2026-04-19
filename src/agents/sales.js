@@ -102,6 +102,10 @@ async function createCryptoPayment({ clientId, amountEur, productType, productId
  *   paymentId?: string,
  *   bizumId?: number,
  *   starsAmount?: number,
+ *   productId?: string|null,
+ *   amountEur?: number,
+ *   productType?: string,
+ *   description?: string,
  * }>}
  */
 export async function runSales({
@@ -136,7 +140,16 @@ export async function runSales({
       `${invoiceUrl}\n` +
       `en cuanto me llegue te lo mando 😈`;
 
-    return { message, paymentMethod: 'crypto', invoiceUrl, paymentId };
+    return {
+      message,
+      paymentMethod: 'crypto',
+      invoiceUrl,
+      paymentId,
+      productId,
+      amountEur,
+      productType: productTypeResolved,
+      description,
+    };
   }
 
   if (paymentMethod === 'bizum') {
@@ -150,7 +163,15 @@ export async function runSales({
     const message =
       `hazme un bizum de ${amountEur}€ al ${bizumNumber}\n` +
       `cuando lo hagas dime y te lo paso`;
-    return { message, paymentMethod: 'bizum', bizumId };
+    return {
+      message,
+      paymentMethod: 'bizum',
+      bizumId,
+      productId,
+      amountEur,
+      productType: productTypeResolved,
+      description,
+    };
   }
 
   if (paymentMethod === 'stars') {
