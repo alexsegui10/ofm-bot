@@ -100,6 +100,28 @@ export async function getClientById(clientId) {
 }
 
 /**
+ * Persist that the catalog (or any category-detail equivalent) has already
+ * been shown to this client. Idempotent — flips the flag to TRUE; never resets
+ * it. Used by the orchestrator to avoid re-emitting the catalog in turns 2+
+ * unless the client EXPLICITLY asks for it (D9 fix).
+ *
+ * @param {number} clientId
+ * @returns {Promise<void>}
+ */
+export async function markClientCatalogSeen(clientId) {
+  if (!clientId) return;
+  try {
+    await query(
+      `UPDATE clients SET has_seen_catalog = TRUE
+       WHERE id = $1 AND has_seen_catalog = FALSE`,
+      [clientId],
+    );
+  } catch (err) {
+    log.warn({ client_id: clientId, err }, 'markClientCatalogSeen failed (non-fatal)');
+  }
+}
+
+/**
  * Extract profile updates from the latest message via LLM and persist them.
  * No-ops if the message yields no new info.
  *

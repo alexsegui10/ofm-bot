@@ -1,5 +1,5 @@
 import { agentLogger } from './lib/logger.js';
-import { getOrCreateClient, getClientById, updateProfile, updateFraudScore } from './agents/profile-manager.js';
+import { getOrCreateClient, getClientById, updateProfile, updateFraudScore, markClientCatalogSeen } from './agents/profile-manager.js';
 import { runRouter } from './agents/router.js';
 import { runPersona } from './agents/persona.js';
 import { runQualityGate, FORBIDDEN_BIO_LEAK, BIO_LEAK_REASON } from './agents/quality-gate.js';
@@ -86,35 +86,16 @@ function shouldAppendCatalog(rawHistoryLength, lastInteraction) {
   return (Date.now() - lastInteraction.getTime()) > SEVEN_DAYS_MS;
 }
 
-// BUG C — markers that identify catalog / category-detail messages already
-// emitted by the orchestrator. We scan recent assistant history for these so
-// we don't re-emit the same block twice (D2/D7 regression).
-const CATALOG_MARKERS = [
-  'esto es lo que tengo',           // generateGreetingCatalog header
-  'cuántas quieres?',                // photos category detail closer
-  'tengo de ',                       // photos detail intro ("tengo de culo, tetas...")
-  '€/min bebe, mínimo',              // videocall detail
-  'personalizados desde ',           // custom detail
-];
-
-/**
- * Returns true if any of the last `lookback` assistant messages already
- * contains a catalog or category-detail block. Used to suppress automatic
- * re-injection in turns 2+ (D2/D7) — the client only needs to see the menu
- * again if they ASK for it explicitly.
- *
- * @param {Array<{role:string,content:string}>} history
- * @param {number} [lookback=6]
- */
-export function assistantHasShownCatalog(history, lookback = 6) {
-  if (!Array.isArray(history) || history.length === 0) return false;
-  const recentAssistant = history
-    .filter((m) => m && m.role === 'assistant')
-    .slice(-lookback);
-  for (const m of recentAssistant) {
-    const c = (m.content || '').toLowerCase();
-    if (CATALOG_MARKERS.some((mark) => c.includes(mark))) return true;
-  }
+// FIX D9 — La función `assistantHasShownCatalog(history, lookback=6)` se
+// reemplazó por el flag persistente `clients.has_seen_catalog` (migración
+// 015). El lookback de 6 mensajes era demasiado corto: en D9 el catálogo
+// salía en T1, caía fuera de la ventana en T3, y Alba lo repetía. Con el
+// flag DB la decisión es estable durante toda la vida del cliente, salvo
+// que el propio cliente pida re-ver el menú (clientExplicitlyAsksCatalog).
+//
+// Se mantiene exportada como wrapper deprecado para que tests legacy
+// puedan migrar incrementalmente; el orquestador ya NO la usa.
+export function assistantHasShownCatalog(_history, _lookback = 6) {
   return false;
 }
 
@@ -664,7 +645,10 @@ export async function handleMessage({
     }
 
     const catalogText = getCatalogText();
-    if (catalogText) allFragments.push(...fragmentMessage(catalogText, cfg));
+    if (catalogText) {
+      allFragments.push(...fragmentMessage(catalogText, cfg));
+      await markClientCatalogSeen(client.id);
+    }
 
     log.info({ chat_id: chatId, greeting, had_personal_question: hasPersonalQuestion(savedText) }, 'new client: fixed greeting sent');
     log.info({ chat_id: chatId, latency_ms: Date.now() - start }, 'pipeline complete (new client)');
@@ -676,6 +660,7 @@ export async function handleMessage({
     const catalogText = getCatalogText();
     if (catalogText) {
       await saveMessage(client.id, 'assistant', catalogText, resolvedIntent);
+      await markClientCatalogSeen(client.id);
       const cfg = getPacerConfig();
       const catalogFrags = fragmentMessage(catalogText, cfg);
       log.info({ chat_id: chatId }, 'price_question (no category): catalog sent directly, skipping Grok');
@@ -811,12 +796,13 @@ export async function handleMessage({
     || V2_INTENTS.has(resolvedIntent)
     || resolvedIntent === 'custom_video_request';
 
-  // BUG C — suppress automatic re-emission of catalog / category-detail when
-  // the assistant already showed it in this conversation, UNLESS the client
-  // explicitly asks to see the menu again. Fixes D2/D7: in turn 4 of D2 the
-  // re-classified intent landed back in CATEGORY_DETAIL_INTENTS and the full
-  // photo-tags table was repeated even though the client had already chosen.
-  const alreadyShownCatalog = assistantHasShownCatalog(history);
+  // FIX D9 — suppress automatic re-emission of catalog / category-detail when
+  // the client has ALREADY seen it (persistent flag clients.has_seen_catalog
+  // set by markClientCatalogSeen on every prior catalog/category-detail send),
+  // UNLESS the client explicitly asks to see the menu again. The previous
+  // 6-message lookback was too short for D9 (catalog at T1 → falls out by T3).
+  const currentClient = updatedClient ?? client;
+  const alreadyShownCatalog = currentClient?.has_seen_catalog === true;
   const explicitCatalogAsk = clientExplicitlyAsksCatalog(savedText, resolvedIntent);
   const suppressByHistory = alreadyShownCatalog && !explicitCatalogAsk;
 
@@ -832,6 +818,7 @@ export async function handleMessage({
     const catalogText = getCatalogText();
     if (catalogText) {
       saleFragments = fragmentMessage(catalogText, config);
+      await markClientCatalogSeen(client.id);
       log.info({ chat_id: chatId, is_new_client: isNewClient }, 'catalog appended');
     }
   } else if (!hasMedia && CATEGORY_DETAIL_INTENTS.has(resolvedIntent) && !suppressByHistory) {
@@ -843,6 +830,7 @@ export async function handleMessage({
     const detail = getCategoryDetail(category, tags, undefined, savedText);
     if (detail) {
       saleFragments = fragmentMessage(detail, config);
+      await markClientCatalogSeen(client.id);
       log.info({ intent: resolvedIntent, category, tags_count: tags.length }, 'category detail generated');
     }
   } else if (!hasMedia && resolvedIntent === 'custom_video_request') {

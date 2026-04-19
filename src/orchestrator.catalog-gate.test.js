@@ -20,53 +20,20 @@ vi.mock('./lib/db.js', () => ({
 
 import { assistantHasShownCatalog, clientExplicitlyAsksCatalog } from './orchestrator.js';
 
-describe('assistantHasShownCatalog', () => {
-  it('returns false on empty / null history', () => {
+// FIX D9 — assistantHasShownCatalog se mantiene exportada como stub
+// (siempre devuelve false). La gate pasó a usar el flag persistente
+// clients.has_seen_catalog (migración 015) — ver tests en
+// src/agents/profile-manager.test.js (markClientCatalogSeen).
+describe('assistantHasShownCatalog (deprecated stub)', () => {
+  it('returns false regardless of input (deprecated — use clients.has_seen_catalog)', () => {
     expect(assistantHasShownCatalog([])).toBe(false);
     expect(assistantHasShownCatalog(null)).toBe(false);
-    expect(assistantHasShownCatalog(undefined)).toBe(false);
-  });
-
-  it('returns true when assistant message contains the full-catalog header', () => {
-    const history = [
-      { role: 'user', content: 'hola' },
-      { role: 'assistant', content: 'esto es lo que tengo:\n\n📸 fotos sueltas 7€/una...' },
-    ];
-    expect(assistantHasShownCatalog(history)).toBe(true);
-  });
-
-  it('returns true when assistant message contains the photos category-detail closer', () => {
-    const history = [
-      { role: 'assistant', content: 'tengo de culo, tetas y lencería 🔥\n1 foto de culo 7€...\ncuántas quieres?' },
-    ];
-    expect(assistantHasShownCatalog(history)).toBe(true);
-  });
-
-  it('returns false when no catalog markers appear', () => {
-    const history = [
-      { role: 'user', content: 'hola' },
-      { role: 'assistant', content: 'holaa bebe 😈 cómo va eso' },
-      { role: 'user', content: 'bien y tú?' },
-      { role: 'assistant', content: 'aquí tumbada pensando guarradas...' },
-    ];
-    expect(assistantHasShownCatalog(history)).toBe(false);
-  });
-
-  it('only inspects assistant messages, not user messages', () => {
-    const history = [
-      { role: 'user', content: 'esto es lo que tengo: dinero' },
-    ];
-    expect(assistantHasShownCatalog(history)).toBe(false);
-  });
-
-  it('respects the lookback window', () => {
-    const history = [
+    expect(assistantHasShownCatalog([
       { role: 'assistant', content: 'esto es lo que tengo: ...' },
-      ...Array.from({ length: 8 }, () => ({ role: 'assistant', content: 'algo' })),
-    ];
-    // Default lookback is 6 → the catalog message is now off-window
-    expect(assistantHasShownCatalog(history)).toBe(false);
-    expect(assistantHasShownCatalog(history, 20)).toBe(true);
+    ])).toBe(false);
+    expect(assistantHasShownCatalog([
+      { role: 'assistant', content: 'tengo de culo, tetas y lencería 🔥' },
+    ])).toBe(false);
   });
 });
 

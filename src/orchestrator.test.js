@@ -186,18 +186,33 @@ describe('handleMessage — E2E pipeline (mocked LLMs)', () => {
     expect(result.fragments.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('returning client with recent activity — sale_intent_photos → category detail, no catalog', async () => {
-    // Seed a recent message for this client first
+  it('returning client who already saw catalog — sale_intent_photos suppresses category detail (FIX D9)', async () => {
+    // First turn: 'hola' (new client) → fixed greeting + catalog → has_seen_catalog=true
     mockLLMs('small_talk', 'hola');
     await handleMessage({ text: 'hola', chatId: CHAT_ID, businessConnectionId: CONN_ID, fromId: 42 });
 
     vi.clearAllMocks();
+    // Second turn: client says "quiero fotos" (no explicit ask for menu).
+    // FIX D9: with has_seen_catalog=true and no explicit catalog ask,
+    // category detail is suppressed — the response comes from Persona alone.
     mockLLMs('sale_intent_photos', 'claro bebe');
     const result = await handleMessage({ text: 'quiero fotos', chatId: CHAT_ID, businessConnectionId: CONN_ID, fromId: 42 });
     expect(runSales).not.toHaveBeenCalled();
-    expect(getCategoryDetail).toHaveBeenCalledWith('photos', expect.any(Array), undefined, 'quiero fotos');
+    expect(getCategoryDetail).not.toHaveBeenCalled();
     expect(result.intent).toBe('sale_intent_photos');
     expect(result.fragments.length).toBeGreaterThan(0);
+  });
+
+  it('returning client who already saw catalog — explicit ask re-emits category detail', async () => {
+    mockLLMs('small_talk', 'hola');
+    await handleMessage({ text: 'hola', chatId: CHAT_ID, businessConnectionId: CONN_ID, fromId: 42 });
+
+    vi.clearAllMocks();
+    // Client EXPLICITLY asks for menu / catalog → suppression bypassed.
+    mockLLMs('sale_intent_photos', 'claro bebe');
+    const result = await handleMessage({ text: 'mándame el menú de fotos', chatId: CHAT_ID, businessConnectionId: CONN_ID, fromId: 42 });
+    expect(getCategoryDetail).toHaveBeenCalledWith('photos', expect.any(Array), undefined, 'mándame el menú de fotos');
+    expect(result.intent).toBe('sale_intent_photos');
   });
 
   it('calls runSales for payment_method_selection with inferred product from history', async () => {

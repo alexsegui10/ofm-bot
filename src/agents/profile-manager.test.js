@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
-import { mergeProfiles, getClientTier, getOrCreateClient, updateProfile, getClientById } from './profile-manager.js';
+import { mergeProfiles, getClientTier, getOrCreateClient, updateProfile, getClientById, markClientCatalogSeen } from './profile-manager.js';
 import { closePool, query } from '../lib/db.js';
 
 vi.mock('../lib/llm-client.js', () => ({
@@ -113,6 +113,38 @@ describe('updateProfile (DB)', () => {
     const client = await getOrCreateClient(TEST_USER_ID, 'conn_test', null);
     await expect(updateProfile(client.id, '', {})).resolves.toBeUndefined();
     expect(callAnthropic).not.toHaveBeenCalled();
+  });
+});
+
+// ─── markClientCatalogSeen (FIX D9) ──────────────────────────────────────────
+describe('markClientCatalogSeen (DB)', () => {
+  const TEST_USER_ID = 778899100n;
+
+  beforeEach(async () => {
+    await query('DELETE FROM clients WHERE telegram_user_id = $1', [TEST_USER_ID]);
+  });
+
+  it('flips has_seen_catalog from false to true on first call', async () => {
+    const client = await getOrCreateClient(TEST_USER_ID, 'conn_test', null);
+    expect(client.has_seen_catalog).toBe(false);  // default
+
+    await markClientCatalogSeen(client.id);
+
+    const updated = await getClientById(client.id);
+    expect(updated.has_seen_catalog).toBe(true);
+  });
+
+  it('is idempotent — second call does not error', async () => {
+    const client = await getOrCreateClient(TEST_USER_ID, 'conn_test', null);
+    await markClientCatalogSeen(client.id);
+    await markClientCatalogSeen(client.id);
+    const updated = await getClientById(client.id);
+    expect(updated.has_seen_catalog).toBe(true);
+  });
+
+  it('no-op for invalid clientId (does not throw)', async () => {
+    await expect(markClientCatalogSeen(null)).resolves.toBeUndefined();
+    await expect(markClientCatalogSeen(0)).resolves.toBeUndefined();
   });
 });
 
