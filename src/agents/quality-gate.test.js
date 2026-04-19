@@ -147,6 +147,63 @@ describe('runQualityGate — bio_leak short-circuit', () => {
   });
 });
 
+// ─── BUG #3 v2: diminutivos (complu, la complu, etc.) ──────────────────────
+describe('FORBIDDEN_BIO_LEAK — diminutives (BUG #3 v2)', () => {
+  it('matches bare "complu"', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('estudio en la complu')).toBe(true);
+  });
+
+  it('matches "complu" with surrounding punctuation', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('voy a la complu, te cuento')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('la complu. me encanta')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('estoy en la complu!')).toBe(true);
+  });
+
+  it('matches uppercase "COMPLU"', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('LA COMPLU es enorme')).toBe(true);
+  });
+
+  it('still matches the full "complutense"', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('estudio en la complutense bebe')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('Complutense de Madrid')).toBe(true);
+  });
+
+  it('matches "complu" mid-sentence after a verb', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('estudio complu')).toBe(true);
+    expect(FORBIDDEN_BIO_LEAK.test('iba a la complu cada día')).toBe(true);
+  });
+
+  it('matches mixed-case "Complu"', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('Complu rules')).toBe(true);
+  });
+
+  it('does NOT match unrelated words containing "compl-" prefix', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('es muy complejo bebe')).toBe(false);
+    expect(FORBIDDEN_BIO_LEAK.test('te complemento')).toBe(false);
+    expect(FORBIDDEN_BIO_LEAK.test('cumplo años mañana')).toBe(false);
+    expect(FORBIDDEN_BIO_LEAK.test('quiero un complemento')).toBe(false);
+    expect(FORBIDDEN_BIO_LEAK.test('todo complicado hoy')).toBe(false);
+  });
+
+  it('does NOT match "completo" or "compleja"', () => {
+    expect(FORBIDDEN_BIO_LEAK.test('está todo completo')).toBe(false);
+    expect(FORBIDDEN_BIO_LEAK.test('una pregunta compleja')).toBe(false);
+  });
+
+  it('quickCheck flags "la complu" intent-agnostic', () => {
+    expect(quickCheck('estudio en la complu', 'small_talk')).toBe(BIO_LEAK_REASON);
+    expect(quickCheck('voy a la complu hoy', 'sexting_request')).toBe(BIO_LEAK_REASON);
+    expect(quickCheck('me ves en la complu?', 'product_selection')).toBe(BIO_LEAK_REASON);
+  });
+
+  it('runQualityGate short-circuits on "complu" without LLM call', async () => {
+    const result = await runQualityGate('te veo luego en la complu bebe', {}, 'small_talk');
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe(BIO_LEAK_REASON);
+    expect(callAnthropic).not.toHaveBeenCalled();
+  });
+});
+
 // ─── buildQualityGatePrompt ──────────────────────────────────────────────────
 
 describe('buildQualityGatePrompt', () => {

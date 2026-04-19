@@ -34,7 +34,10 @@ const SEXTING_PERSONAL_LEAK_PATTERN = /\b(ade|complutense|moncloa)\b/i;
 // concrete Madrid landmarks/universities. This is intent-AGNOSTIC: Alba should never name
 // these specific places, in or out of sexting. The orchestrator triggers a regeneration
 // (with reinforced instruction) when this fires; the safeResponse is the last-resort fallback.
-export const FORBIDDEN_BIO_LEAK = /\b(complutense|moncloa|uam|aut[oó]noma|carlos\s*iii|rey\s*juan\s*carlos|cu[aá]tro\s*caminos|arg[uü]elles)\b/i;
+// BUG #3 v2 — captures diminutives ("complu", "la complu") and the full
+// forms. Persona was leaking biographical data through informal short forms
+// (e.g. "estudio en la complu") that the previous regex missed.
+export const FORBIDDEN_BIO_LEAK = /\b(complu(tense)?|moncloa|uam|aut[oó]noma|carlos\s*iii|rey\s*juan\s*carlos|cu[aá]tro\s*caminos|arg[uü]elles)\b/i;
 export const BIO_LEAK_REASON = 'Filtra datos biográficos prohibidos (universidad/barrio Madrid)';
 
 // Quick string-based violation checks (no LLM needed, cheaper + faster)
