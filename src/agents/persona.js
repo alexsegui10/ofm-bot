@@ -58,6 +58,31 @@ const CATALOG_REGEN_INSTRUCTION =
   'Responde SOLO coqueteo en 1-2 frases cortas, sin enumerar productos ni cifras.';
 
 /**
+ * Collapse 3+ consecutive identical letters to 2 (max 1 extra letter per
+ * criterio §3). Grok tends to emit "holaaa" / "siiiiii" / "guapooo" (>1 extra)
+ * which violates the "max 1 letra extra" rule. This post-processor normalises
+ * those elongations without touching:
+ *   - "jaja / jajaja / jajajaja" (no 3 consecutive same letter — safe)
+ *   - Spanish digraphs "cc / ll / rr" (exactly 2 — safe)
+ *   - emojis and non-letter characters
+ *
+ * Examples:
+ *   sanitizeElongations("holaaa bebe")  → "holaa bebe"
+ *   sanitizeElongations("holaaaaaa")    → "holaa"
+ *   sanitizeElongations("siiiiii")      → "sii"
+ *   sanitizeElongations("jajajaja")     → "jajajaja"  (unchanged)
+ *
+ * Exported for testing.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function sanitizeElongations(text) {
+  if (!text || typeof text !== 'string') return text;
+  return text.replace(/([a-záéíóúñ])\1{2,}/gi, '$1$1');
+}
+
+/**
  * Compact price reference derived from products.json. Injected in the system
  * prompt so that IF Persona ends up quoting a price (a misrouted turn where
  * Sales didn't fire), it uses the real catalogue value instead of inventing one.
@@ -191,6 +216,11 @@ export async function runPersona(message, history = [], client = {}, intent = 's
     .replace(/^(Assistant|Human|User|Alba|Cliente)\s*:\s*/i, '')
     .replace(/^#+\s+\S.*\n?/m, '') // strip stray markdown headers
     .trim();
+
+  // Collapse elongations: "holaaa" → "holaa", "siiiiii" → "sii".
+  // Enforces criterio §3 "máximo 1 letra extra por palabra". Safe for
+  // "jaja/jajaja" (no 3 consecutive) and Spanish digraphs "cc/ll/rr".
+  cleaned = sanitizeElongations(cleaned);
 
   // ─── BUG #2 v2 — deterministic post-processing ───────────────────────────
   // If the client has already been shown the catalog at least once, strip any

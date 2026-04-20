@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildSystemPrompt, runPersona, sanitizeCatalogRepeats, CATALOG_REPEAT_PATTERNS } from './persona.js';
+import { buildSystemPrompt, runPersona, sanitizeCatalogRepeats, CATALOG_REPEAT_PATTERNS, sanitizeElongations } from './persona.js';
 
 vi.mock('../lib/llm-client.js', () => ({
   callAnthropic: vi.fn(),
@@ -233,6 +233,58 @@ describe('sanitizeCatalogRepeats (pure function)', () => {
     expect(Array.isArray(CATALOG_REPEAT_PATTERNS)).toBe(true);
     expect(CATALOG_REPEAT_PATTERNS.length).toBeGreaterThan(0);
     CATALOG_REPEAT_PATTERNS.forEach((rx) => expect(rx).toBeInstanceOf(RegExp));
+  });
+});
+
+describe('sanitizeElongations — letras repetidas (criterio §3)', () => {
+  it('collapses 3+ identical letters to 2: "holaaa" → "holaa"', () => {
+    expect(sanitizeElongations('holaaa bebe')).toBe('holaa bebe');
+  });
+
+  it('collapses longer elongations: "holaaaaaa" → "holaa"', () => {
+    expect(sanitizeElongations('holaaaaaa guapo')).toBe('holaa guapo');
+  });
+
+  it('collapses vocals: "siiiiii" → "sii", "guapooo" → "guapoo"', () => {
+    expect(sanitizeElongations('siiiiii')).toBe('sii');
+    expect(sanitizeElongations('guapooo')).toBe('guapoo');
+  });
+
+  it('leaves "holaa" (1 letra extra) unchanged', () => {
+    expect(sanitizeElongations('holaa bebe')).toBe('holaa bebe');
+  });
+
+  it('leaves "jaja / jajaja / jajajaja" unchanged (no 3 consecutive same)', () => {
+    expect(sanitizeElongations('jaja')).toBe('jaja');
+    expect(sanitizeElongations('jajaja q dices')).toBe('jajaja q dices');
+    expect(sanitizeElongations('jajajaja bebe')).toBe('jajajaja bebe');
+  });
+
+  it('leaves Spanish digraphs "cc / ll / rr" unchanged', () => {
+    expect(sanitizeElongations('accion perro sello')).toBe('accion perro sello');
+  });
+
+  it('preserves accented vowels when collapsing', () => {
+    expect(sanitizeElongations('síííí')).toBe('síí');
+  });
+
+  it('case-insensitive but preserves case', () => {
+    expect(sanitizeElongations('HOLAAAA')).toBe('HOLAA');
+    expect(sanitizeElongations('HoLaaaa')).toBe('HoLaa');
+  });
+
+  it('handles null/empty/non-string safely', () => {
+    expect(sanitizeElongations(null)).toBe(null);
+    expect(sanitizeElongations('')).toBe('');
+    expect(sanitizeElongations(undefined)).toBe(undefined);
+  });
+
+  it('preserves emojis and surrounding text', () => {
+    expect(sanitizeElongations('holaaa bebe 😈')).toBe('holaa bebe 😈');
+  });
+
+  it('applies to multiple elongations in one string', () => {
+    expect(sanitizeElongations('holaaa y siiii rey')).toBe('holaa y sii rey');
   });
 });
 
