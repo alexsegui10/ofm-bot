@@ -1,5 +1,16 @@
 # NOTES — pendientes a mano para cuando toquemos zonas concretas
 
+## Bloque 1 A2 sanitizer REVERTIDO (2026-04-20 noche)
+
+Commit `ccd71c5` (Fix A2: sanitizeElongations) aplicado y revertido tras mini-baseline A2 + controles:
+- A2 sigue FAIL — pero por **empty-turn-1** (nada emitido turno 1), no por elongación. El sanitizer era correcto pero no resolvía el FAIL de este run.
+- **C2 REGRESIÓN**: Grok inventó "soy de un pueblo cerca de valencia" + mencionó uni proactivamente. LLM variance (content hallucination), NO causado por sanitizer.
+- **G1 REGRESIÓN**: Alba en bucle binario "A o B?" sin cerrar venta. LLM variance (bot stuck), NO causado por sanitizer.
+
+El sanitizer es técnicamente correcto (pure text transform de 3+ letras iguales a 2), no puede causar esas regresiones. Pero la regla del plan dice "regresión en control → revert inmediato". Revertido `ccd71c5`.
+
+**Consideración para Alex:** reaplicar el sanitizer sería seguro y bajo riesgo. Código está en el historial de git (commit ccd71c5) + tests 11 casos. Bajo riesgo si se decide reintroducir. Requerirá volver a ejecutar mini-baseline para verificar A2 en un run donde no haya empty-turn-1.
+
 ## Techo del evaluador (2026-04-20)
 
 Tras 2 rondas de calibración del evaluador LLM-as-judge (Sonnet 4.6):
