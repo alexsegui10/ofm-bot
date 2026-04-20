@@ -37,7 +37,7 @@ export function estimateCost(model, inputTokens, outputTokens) {
 // Escalated table. Explicit, not a formula, so copy and code agree.
 // Max 10 per transaction — por encima, Alba sugiere pack personalizado.
 const PHOTO_PRICE_TABLE = Object.freeze({
-  1: 7, 2: 12, 3: 15, 4: 19, 5: 22, 6: 25, 7: 28, 8: 31, 9: 34, 10: 37,
+  1: 7, 2: 12, 3: 15, 4: 18, 5: 22, 6: 25, 7: 28, 8: 31, 9: 34, 10: 37,
 });
 
 export const PHOTO_MAX_PER_TX = 10;

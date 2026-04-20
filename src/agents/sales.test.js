@@ -333,10 +333,10 @@ describe('createOfferFromProduct → offer carries productId + amountEur for set
     expect(offer.amountEur).toBe(30);
   });
 
-  it('singles:tag:count → offer.productId = "singles:tetas:4", offer.amountEur = 19 (bizum)', async () => {
+  it('singles:tag:count → offer.productId = "singles:tetas:4", offer.amountEur = 18 (bizum)', async () => {
     const offer = await createOfferFromProduct({ productId: 'singles:tetas:4', client: CLIENT, paymentMethod: 'bizum' });
     expect(offer.productId).toBe('singles:tetas:4');
-    expect(offer.amountEur).toBe(19);
+    expect(offer.amountEur).toBe(18);
   });
 });
 
@@ -361,7 +361,7 @@ describe('lookupProductPrice — pure price lookup', () => {
 
   it('returns scaled price for singles:tetas:4', () => {
     const r = lookupProductPrice('singles:tetas:4');
-    expect(r).toMatchObject({ amountEur: 19, productType: 'photos' });
+    expect(r).toMatchObject({ amountEur: 18, productType: 'photos' });
     expect(r.description).toMatch(/4 fotos de tetas/);
   });
 

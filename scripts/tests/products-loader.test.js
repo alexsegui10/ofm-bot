@@ -207,7 +207,7 @@ describe('generateGreetingCatalog', () => {
 
 describe('calculatePhotoPrice', () => {
   it.each([
-    [1, 7], [2, 12], [3, 15], [4, 19], [5, 22],
+    [1, 7], [2, 12], [3, 15], [4, 18], [5, 22],
     [6, 25], [7, 28], [8, 31], [9, 34], [10, 37],
   ])('count=%i → %i€', (count, expected) => {
     expect(calculatePhotoPrice(count)).toBe(expected);
