@@ -308,8 +308,32 @@ function pickBotDenial() {
   return BOT_DENIAL_RESPONSES[Math.floor(Math.random() * BOT_DENIAL_RESPONSES.length)];
 }
 
+// ── A7 — Security-question short-circuit ────────────────────────────────────
+// "¿es seguro pagar por bizum?" / "¿es fiable?" / "¿no es una estafa?" — si
+// dejamos que Router clasifique, a veces lo tagea como payment_method_selection
+// (por la mención a 'bizum') y Sales dispara instrucciones de pago ANTES de que
+// el cliente haya elegido cantidad. Respondemos con una tranquilizadora canónica
+// sin firing Sales.
+const SECURITY_QUESTION_PATTERN = /\b(es\s+seguro|es\s+fiable|es\s+una\s+estafa|me\s+van\s+a\s+estafar|puedo\s+(confiar|fiarme)|funciona\s+bien|esto\s+funciona)\b/i;
+
+const SECURITY_REASSURE_RESPONSES = [
+  'tranqui bebe, bizum es al momento y en cuanto me llega te paso todo 😈',
+  'claro guapo, todo seguro, me pagas y te mando al toque 🔥',
+  'sí amor, es instantáneo, tú me pagas y yo te envío enseguida 😘',
+];
+
+function isSecurityQuestion(text) {
+  if (!text) return false;
+  return SECURITY_QUESTION_PATTERN.test(text);
+}
+
+function pickSecurityReassure() {
+  return SECURITY_REASSURE_RESPONSES[Math.floor(Math.random() * SECURITY_REASSURE_RESPONSES.length)];
+}
+
 // Exported for tests.
 export { isBotQuestion, BOT_QUESTION_PATTERN, IS_REAL_PATTERN, BOT_DENIAL_RESPONSES };
+export { isSecurityQuestion, SECURITY_QUESTION_PATTERN, SECURITY_REASSURE_RESPONSES };
 
 /**
  * FIX A — Resolve the final response emitted after the Quality Gate retry loop.
@@ -583,6 +607,20 @@ export async function handleMessage({
     const cfg = getPacerConfig();
     const fragments = fragmentMessage(denial, cfg);
     log.info({ chat_id: chatId, text_preview: text.slice(0, 40), latency_ms: Date.now() - start }, 'pipeline complete (bot-question short-circuit)');
+    return { fragments, intent: 'small_talk' };
+  }
+
+  // ── 1d. Security-question short-circuit (A7) ────────────────────────────
+  // "¿es seguro pagar por bizum?" — Router a veces tagea como
+  // payment_method_selection (por mención de bizum) y Sales dispara pago sin
+  // cantidad elegida. Emitimos tranquilizadora y suspendemos firing Sales.
+  if (text && isSecurityQuestion(text)) {
+    await saveMessage(client.id, 'user', text);
+    const reassure = pickSecurityReassure();
+    await saveMessage(client.id, 'assistant', reassure, 'small_talk');
+    const cfg = getPacerConfig();
+    const fragments = fragmentMessage(reassure, cfg);
+    log.info({ chat_id: chatId, text_preview: text.slice(0, 40), latency_ms: Date.now() - start }, 'pipeline complete (security-question short-circuit)');
     return { fragments, intent: 'small_talk' };
   }
 
