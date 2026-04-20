@@ -112,6 +112,9 @@ const EXPLICIT_CATALOG_REQUEST_PATTERNS = [
     `${NON_LETTER_LB}(rep[ií]te(me)?|recu[eé]rdame|mu[eé]strame|p[aá]same)\\s+(la|el|las|los)?\\s*(menu|menú|cat[aá]logo|lista|opciones|precios)${NON_LETTER_LA}`,
     'i',
   ),
+  // B1: "qué tipo/clase de fotos", "qué fotos tienes/hay" — category-detail ask
+  /\bqu[eé]\s+(tipo|clase)\s+de\s+(foto|video|pack|sexting)/i,
+  /\bqu[eé]\s+(foto|video|pack)s?\s+(tienes|hay|ofreces|ten[eé]s)/i,
 ];
 
 /**
