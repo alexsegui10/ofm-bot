@@ -831,15 +831,13 @@ export async function handleMessage({
       internalInstruction = 'el cliente te acaba de mandar una foto o video suyo. reacciona de forma ligera y pícara, algo tipo "uy que travieso" o "jajaja q cosas me mandas". NUNCA digas que no puedes ver imágenes ni que eres un bot.';
     }
   } else if (resolvedIntent === 'videocall_request' || resolvedIntent === 'custom_video_request') {
-    internalInstruction = newClientPrefix + 'El cliente quiere videollamada o vídeo personalizado. Responde con entusiasmo y dile que espere un momento mientras miras tu agenda. NO confirmes nada aún.';
+    internalInstruction = newClientPrefix + 'El cliente quiere videollamada. Si aún NO ha dado un momento concreto, RESPONDE CON EL PRECIO: "son 4€ el minuto bebe, mínimo 5 min. cuándo te va bien?" o equivalente natural. Si el cliente YA dio un momento (ahora, esta noche, mañana…), responde "dame 5 min a ver si puedo, te digo" — eso activará el handoff al humano. NUNCA confirmes la videollamada tú misma. NUNCA menciones fotos, videos ni sexting.';
   } else if (resolvedIntent === 'sale_intent_photos') {
     internalInstruction = newClientPrefix + 'El cliente pregunta SOLO por fotos. Responde breve y con ganas. NUNCA menciones videos, sexting, videollamada ni ninguna otra categoría. El Sales Agent mandará los detalles de fotos a continuación.';
   } else if (resolvedIntent === 'sale_intent_videos') {
     internalInstruction = newClientPrefix + 'El cliente pregunta SOLO por videos. Responde breve y con ganas. NUNCA menciones fotos, sexting, videollamada ni ninguna otra categoría. El Sales Agent mandará los detalles de videos a continuación.';
   } else if (resolvedIntent === 'sexting_request') {
     internalInstruction = newClientPrefix + 'El cliente quiere sexting. Responde con UNA frase de entusiasmo. NUNCA preguntes al cliente qué quiere hacer, qué le gusta ni cuánto rato — el sistema manda el precio a continuación. NUNCA menciones fotos, videos ni videollamada.';
-  } else if (resolvedIntent === 'videocall_request') {
-    internalInstruction = newClientPrefix + 'El cliente quiere videollamada. Responde breve y con ganas. NUNCA menciones fotos, videos, sexting ni ninguna otra categoría. El Sales Agent mandará los detalles a continuación.';
   } else if (resolvedIntent === 'product_selection') {
     internalInstruction = 'El cliente ha elegido un producto. Confírmalo con entusiasmo y pregúntale cómo quiere pagar: bizum, crypto o Telegram Stars.';
   } else if (resolvedIntent === 'payment_method_selection') {
