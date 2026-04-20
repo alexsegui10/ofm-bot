@@ -3,6 +3,8 @@ import { getPersonaContent } from '../lib/persona-config.js';
 import { env } from '../config/env.js';
 import { agentLogger } from '../lib/logger.js';
 import { getClientTier } from './profile-manager.js';
+import { getProducts } from '../config/products.js';
+import { calculatePhotoPrice, PHOTO_MAX_PER_TX } from '../lib/pricing.js';
 
 const log = agentLogger('persona');
 
@@ -54,6 +56,41 @@ export function sanitizeCatalogRepeats(text) {
 const CATALOG_REGEN_INSTRUCTION =
   'No escribas precios ni catálogo (el cliente ya lo vio antes en este chat). ' +
   'Responde SOLO coqueteo en 1-2 frases cortas, sin enumerar productos ni cifras.';
+
+/**
+ * Compact price reference derived from products.json. Injected in the system
+ * prompt so that IF Persona ends up quoting a price (a misrouted turn where
+ * Sales didn't fire), it uses the real catalogue value instead of inventing one.
+ *
+ * Exported for testing.
+ */
+export function buildPriceReference() {
+  const products = getProducts();
+  const videos = (products.videos ?? [])
+    .filter((v) => v.activo !== false)
+    .map((v) => `${v.id} ${v.titulo} ${v.precio_eur}€`)
+    .join(', ');
+  const singles = Array.from({ length: Math.min(6, PHOTO_MAX_PER_TX) }, (_, i) => {
+    const n = i + 1;
+    return `${n}→${calculatePhotoPrice(n)}€`;
+  }).join(', ');
+  const sext = (products.sexting_templates ?? [])
+    .map((st) => `${st.duracion_min}min ${st.precio_eur}€`)
+    .join(', ');
+  const vc = products.videollamada
+    ? `${products.videollamada.precio_por_minuto}€/min, mín ${products.videollamada.minimo_minutos}min`
+    : '4€/min, mín 5min';
+  const custom = products.personalizado?.precio_minimo ?? 45;
+
+  return [
+    'PRECIOS EXACTOS (si acabas mencionando un precio, usa SOLO estos valores, JAMÁS inventes otro):',
+    `- videos: ${videos}`,
+    `- fotos sueltas: ${singles}`,
+    `- sexting: ${sext}`,
+    `- videollamada: ${vc}`,
+    `- personalizado: desde ${custom}€`,
+  ].join('\n');
+}
 
 /**
  * Builds the system prompt from persona.md + client context.
@@ -108,7 +145,9 @@ Si el cliente está caliente o muestra interés: COQUETEA verbalmente, genera de
 
   const noCatalogRepeatRule = `PROHIBIDO ABSOLUTAMENTE repetir la lista de precios del catálogo en tu respuesta de texto. NO escribas "1 foto 7€", "2 fotos 12€", "fotos sueltas 7€/una", "videos desde X€", "sexting 5min/10min/15min", ni ninguna tabla, lista o enumeración de precios. NO uses bullets (-, *, •) ni emojis de cámara/foto/video (📸 🎥 🎬 🎞️) para enumerar productos. El catálogo lo añade el Orquestador en un fragmento APARTE — si lo repites en tu mensaje, el cliente lo verá DUPLICADO. Tu rol aquí es responder breve y coquetear; nunca emitir el menú.`;
 
-  return `${maxPriorityInstruction}\n\n${noCatalogRepeatRule}\n\n---\n${personaContent}\n\n---\n${roleplayRule}${noPromiseRule}\n\n${firstPersonRule}\n${noRepeatRule}\n\n---\n${clientCtx}`;
+  const priceReference = buildPriceReference();
+
+  return `${maxPriorityInstruction}\n\n${noCatalogRepeatRule}\n\n${priceReference}\n\n---\n${personaContent}\n\n---\n${roleplayRule}${noPromiseRule}\n\n${firstPersonRule}\n${noRepeatRule}\n\n---\n${clientCtx}`;
 }
 
 /**
