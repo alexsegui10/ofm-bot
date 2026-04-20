@@ -1,5 +1,50 @@
 # NOTES — pendientes a mano para cuando toquemos zonas concretas
 
+## Sesión nocturna 2026-04-20 — Resumen estructurado
+
+**Commits reales aplicados y conservados (orden cronológico):**
+- `be1f80b` — notes: round 2 evaluador refutada, pivotamos a bugs reales
+- `8c10272` — notes: A2 sanitizer revertido por regresión control C2/G1
+
+**Commits aplicados y revertidos:**
+- `ccd71c5` (A2 sanitizeElongations) — revertido por regresión LLM variance en C2+G1
+- `b0d79f9` (B1 patrones "qué tipo de fotos") — revertido por regresión LLM variance en B3
+
+**Bloques:**
+
+| Bloque | Objetivo | Resultado | Siguiente |
+|---|---|---|---|
+| 0 | Revertir round 2 + NOTES | ✅ Hecho | — |
+| 1 | A2 sanitizer "holaaaa" | ⚠️ Aplicado+revertido (regresión C2/G1 por LLM variance, no por fix) | Reaplicar sanitizer con confianza (código + tests en historial commit ccd71c5). Fix técnicamente correcto, falló por variance. |
+| 2 | B1 patrones "qué tipo de fotos" | ⚠️ Aplicado+revertido (regresión B3 por LLM variance, no por fix) | Reaplicar patrones con confianza (commit b0d79f9 en historial). Fix técnicamente correcto. |
+| 3 | A6 handoff | 🛑 (C) ESPERANDO DECISIÓN DE ALEX | human-handoff.js sin implementar (throws "FASE 6"). Feature mediana (2-3 días). Decisiones de producto arriba en esta misma doc. |
+| 4 | B5 inventa medias rojas | ⏭️ No iniciado (regla STOP 2 mini-baselines consecutivos regresionaron) | Plan propuesto: extender `buildPriceReference()` en persona.js con `photo_single.tags_disponibles` (bajo riesgo). Si no funciona, orchestrator pattern-match "tienes con X?" (medio riesgo). |
+
+**Regresiones encontradas (todas LLM variance, no causadas por fixes):**
+- Bloque 1 mini: C2 "Grok inventó pueblo de valencia", G1 "Grok stuck en bucle binario". Ambos independientes del sanitizer (pure text transform).
+- Bloque 2 mini: B3 "Grok vago 'qué te apetece ver' + inventa squirt ducha". B3 no matchea ningún patrón nuevo, así que el fix no pudo causarlo.
+
+**Por qué paré:** regla explícita del plan "Si 2 mini-baselines consecutivos regresionan → PARA". Cumplida tras bloque 2. No entro en bucle ciego.
+
+**Proyección baseline actual:** 23/34 (el baseline previo se mantiene, los 2 fixes aplicados se revirtieron porque las regresiones eran control, aunque la causa no fuera el fix).
+
+**Siguiente paso recomendado cuando Alex vuelva:**
+
+1. **Revisar decisión sobre BLOQUE 1 y 2 revertidos.** Los fixes son técnicamente correctos (revisables en `git show ccd71c5` y `git show b0d79f9`). Las regresiones fueron varianza LLM, no causadas por los fixes. Opciones:
+   - (a) Reaplicar ambos con un `cherry-pick` y correr full baseline (~2h) en lugar de mini-baselines ruidosos. Si full baseline sube, commit se queda; si baja, se revierte con datos reales.
+   - (b) Descartar ambos fixes como "no valen la pena" — seguir en 23/34.
+2. **Decidir sobre BLOQUE 3 A6 handoff.** 6 decisiones de producto listadas arriba. FASE 6 en el roadmap.
+3. **Decidir sobre BLOQUE 4 B5.** Plan propuesto arriba. No intentado.
+4. **Full baseline de validación.** NO lancé full baseline yo sola (regla). Propuesto: cuando Alex vuelva y tome decisiones, lanzar full para confirmar que el bot sigue en 23/34 o mejor.
+
+**Señal útil de la noche:** los 2 mini-baselines consecutivos con regresiones indican que el bot está en un estado donde Grok tiene mala variance esta sesión (horas acumuladas del proceso node --watch). Posible pista: restart del server TEST_MODE antes del próximo baseline puede reducir variance.
+
+**Estado del repo al parar:** HEAD = `8c10272`. Working tree limpio respecto a lo commiteado. `.env`, credenciales, líneas rojas intactas. No se tocó Router, BOT_DENIAL, ni archivos fuera del repo.
+
+---
+
+
+
 ## Bloque 1 A2 sanitizer REVERTIDO (2026-04-20 noche)
 
 Commit `ccd71c5` (Fix A2: sanitizeElongations) aplicado y revertido tras mini-baseline A2 + controles:
