@@ -159,7 +159,7 @@ export async function runSales({
       productType: productTypeResolved,
       productId,
     });
-    const bizumNumber = env.BIZUM_NUMBER ?? '662112420';
+    const bizumNumber = (env.BIZUM_NUMBER ?? '662112420').replace(/^\+?34/, '').replace(/\s+/g, '');
     const message =
       `hazme un bizum de ${amountEur}€ al ${bizumNumber}\n` +
       `cuando lo hagas dime y te lo paso`;

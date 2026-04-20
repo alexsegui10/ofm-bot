@@ -294,9 +294,9 @@ const IS_REAL_PATTERN     = /\b(eres|sos)\s+(real|humana|una\s+persona\s+real|de
 // sees both (a) the in-character refusal and (b) a follow-up question with
 // concrete options in the SAME turn.
 const BOT_DENIAL_RESPONSES = [
-  'jajaja q dices bebe, soy alba de verdad 😅\n\ndime qué buscas, fotos o videos? 😈',
-  'q va guapo soy alba, no una IA 🔥\n\nfotos, videos o sexting?',
-  'q dices tonto jajaja soy yo de verdad 😘\n\ndime qué te pone, fotos o videos?',
+  'jajaja q dices bebe, soy alba de verdad 🔥\n\ndime qué buscas, fotos o videos? 😈',
+  'jaja q va tonto, soy yo escribiéndote 😘\n\nfotos, videos o sexting?',
+  'jajaja q cosas tienes, soy alba en persona 😈\n\ndime qué te pone, fotos o videos?',
 ];
 
 function isBotQuestion(text) {
