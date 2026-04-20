@@ -308,6 +308,38 @@ function pickBotDenial() {
 // Exported for tests.
 export { isBotQuestion, BOT_QUESTION_PATTERN, IS_REAL_PATTERN, BOT_DENIAL_RESPONSES };
 
+/**
+ * FIX A — Resolve the final response emitted after the Quality Gate retry loop.
+ *
+ * Policy:
+ *   - qgN.ok                           → use retryResponse (retry succeeded)
+ *   - bio_leak (either pass)           → sanitize retryResponse|personaResponse in-place
+ *   - qg1.reason === empty_question    → fall back to personaResponse (NOT safeResponse)
+ *       Rationale: an evasive safeResponse ("uf espera que me ha llegado algo")
+ *       destroys fuzz accuracy. Delivering the original persona reply — even if
+ *       it ends with a bare question — is strictly better than derailing the flow.
+ *   - any other reason                 → legacy safeResponse fallback
+ *
+ * Pure helper: takes already-computed QG results and returns the string to save.
+ * Logs via the module logger.
+ */
+export function resolveQualityGateFinalResponse({ qg1, qgN, personaResponse, retryResponse, clientId } = {}) {
+  if (qgN && qgN.ok) {
+    return retryResponse;
+  }
+  const bioLeak = (qg1 && qg1.reason === BIO_LEAK_REASON) || (qgN && qgN.reason === BIO_LEAK_REASON);
+  if (bioLeak) {
+    const sanitized = (retryResponse || personaResponse || '').replace(FORBIDDEN_BIO_LEAK, 'Madrid').trim();
+    log.warn({ client_id: clientId }, 'quality gate: bio_leak persisted after 2 retries — sanitized in-place');
+    return sanitized;
+  }
+  if (qg1 && qg1.reason === EMPTY_QUESTION_REASON) {
+    log.warn({ client_id: clientId }, 'quality gate: empty_question persisted after 2 retries — keeping original persona response');
+    return personaResponse;
+  }
+  return (qgN && qgN.safeResponse) || 'espera un momento';
+}
+
 // v2 intents routed through the products.json catalog (resolved via content-dispatcher).
 const V2_LIST_INTENTS    = new Set(['ask_video_list', 'ask_pack_list']);
 const V2_CHOOSE_INTENTS  = new Set(['choose_video', 'choose_pack', 'buy_sexting_template']);
@@ -865,16 +897,13 @@ export async function handleMessage({
       fallbackUsed: !qgN.ok,
     });
 
-    if (qgN.ok) {
-      finalResponse = retryResponse;
-    } else if (qg1.reason === BIO_LEAK_REASON || qgN.reason === BIO_LEAK_REASON) {
-      // Sanitizar in-place en lugar de safeResponse genérico — preserva
-      // contexto y registro de Alba.
-      finalResponse = (retryResponse || personaResponse).replace(FORBIDDEN_BIO_LEAK, 'Madrid').trim();
-      log.warn({ client_id: client.id }, 'quality gate: bio_leak persisted after 2 retries — sanitized in-place');
-    } else {
-      finalResponse = qgN.safeResponse || 'espera un momento';
-    }
+    finalResponse = resolveQualityGateFinalResponse({
+      qg1,
+      qgN,
+      personaResponse,
+      retryResponse,
+      clientId: client.id,
+    });
   }
 
   // ── 9. Save assistant response ──────────────────────────────────────────
