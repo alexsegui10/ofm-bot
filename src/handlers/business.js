@@ -206,7 +206,16 @@ export function registerBusinessHandlers(bot, api = bot.api) {
             });
           }
         } catch (err) {
-          log.error({ chat_id: parsed.chatId, err }, 'pipeline error');
+          log.error({
+            chat_id: parsed.chatId,
+            text_preview: concatenatedText?.slice(0, 120) ?? null,
+            has_media: parsed.hasMedia,
+            active_sexting: activeSexting,
+            is_roleplay: isRoleplayRequest(concatenatedText),
+            err_name: err?.name,
+            err_message: err?.message,
+            err_stack: err?.stack,
+          }, 'pipeline error');
         }
       },
       getPacerConfig(),
