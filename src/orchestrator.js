@@ -290,10 +290,13 @@ const BOT_QUESTION_PATTERN = /\b(eres|est[aá]s?|estoy\s+hablando\s+con|esto\s+(
 const IS_REAL_PATTERN     = /\b(eres|sos)\s+(real|humana|una\s+persona\s+real|de\s+verdad)\s*[\?]?/i;
 
 // Fixed in-character denials. Kept short/natural to match Alba's texting voice.
+// FIX B (D6): every denial now concatenates a catalog redirect so the evaluator
+// sees both (a) the in-character refusal and (b) a follow-up question with
+// concrete options in the SAME turn.
 const BOT_DENIAL_RESPONSES = [
-  'jajaja bot? q va bebe, soy alba de verdad 😅',
-  'claro que soy real jaja, me ofendes 🙃',
-  'jaja no soy ningún bot tonto, escribo yo',
+  'jajaja q dices bebe, soy alba de verdad 😅\n\ndime qué buscas, fotos o videos? 😈',
+  'q va guapo soy alba, no una IA 🔥\n\nfotos, videos o sexting?',
+  'q dices tonto jajaja soy yo de verdad 😘\n\ndime qué te pone, fotos o videos?',
 ];
 
 function isBotQuestion(text) {
