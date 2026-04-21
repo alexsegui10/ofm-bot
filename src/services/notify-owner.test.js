@@ -24,16 +24,16 @@ beforeEach(() => {
 // ─── EVENT_TEMPLATES ──────────────────────────────────────────────────────────
 
 describe('EVENT_TEMPLATES', () => {
-  it('exposes videocall_scheduled', () => {
-    expect(typeof EVENT_TEMPLATES.videocall_scheduled).toBe('function');
+  it('exposes videocall_requested', () => {
+    expect(typeof EVENT_TEMPLATES.videocall_requested).toBe('function');
   });
 
   it('exposes ia_verification_serious', () => {
     expect(typeof EVENT_TEMPLATES.ia_verification_serious).toBe('function');
   });
 
-  it('videocall_scheduled includes clientId, clientName, confirmedTime', () => {
-    const body = EVENT_TEMPLATES.videocall_scheduled({
+  it('videocall_requested includes clientId, clientName, confirmedTime', () => {
+    const body = EVENT_TEMPLATES.videocall_requested({
       clientId: 42,
       clientName: 'Pepe',
       confirmedTime: 'mañana a las 21:00',
@@ -44,8 +44,8 @@ describe('EVENT_TEMPLATES', () => {
     expect(body).toMatch(/videollamada/i);
   });
 
-  it('videocall_scheduled includes last 3 recent messages only', () => {
-    const body = EVENT_TEMPLATES.videocall_scheduled({
+  it('videocall_requested includes last 3 recent messages only', () => {
+    const body = EVENT_TEMPLATES.videocall_requested({
       clientId: 1,
       recentMessages: [
         { role: 'user', content: 'uno' },
@@ -62,8 +62,8 @@ describe('EVENT_TEMPLATES', () => {
     expect(body).not.toContain('dos');
   });
 
-  it('videocall_scheduled works with minimal payload', () => {
-    const body = EVENT_TEMPLATES.videocall_scheduled({ clientId: 7 });
+  it('videocall_requested works with minimal payload', () => {
+    const body = EVENT_TEMPLATES.videocall_requested({ clientId: 7 });
     expect(body).toContain('7');
     expect(body).toContain('(sin nombre)');
     expect(body).toContain('(no especificado)');
@@ -81,13 +81,21 @@ describe('EVENT_TEMPLATES', () => {
     expect(body).toMatch(/pausado/i);
   });
 
-  it('ia_verification_serious truncates long literal messages to 240 chars', () => {
-    const long = 'a'.repeat(500);
+  it('ia_verification_serious truncates long literal messages to 1000 chars', () => {
+    const long = 'a'.repeat(5000);
     const body = EVENT_TEMPLATES.ia_verification_serious({ clientId: 1, literalMessage: long });
     // Buscamos la corrida más larga de 'a' — la de literalMessage truncada.
     const allRuns = body.match(/a+/g) || [];
     const longestRun = allRuns.sort((x, y) => y.length - x.length)[0];
-    expect(longestRun.length).toBe(240);
+    expect(longestRun.length).toBe(1000);
+  });
+
+  it('ia_verification_serious leaves short messages intact (no truncation)', () => {
+    const body = EVENT_TEMPLATES.ia_verification_serious({
+      clientId: 1,
+      literalMessage: 'mensaje corto sin truncar',
+    });
+    expect(body).toContain('mensaje corto sin truncar');
   });
 });
 
@@ -148,7 +156,7 @@ describe('notifyOwner', () => {
   it('renders template and delivers via injected adapter', async () => {
     const deliver = vi.fn().mockResolvedValue({ sid: 'OK' });
     const adapter = { deliver };
-    await notifyOwner('videocall_scheduled', { clientId: 42, clientName: 'Pepe' }, { adapter });
+    await notifyOwner('videocall_requested', { clientId: 42, clientName: 'Pepe' }, { adapter });
     expect(deliver).toHaveBeenCalledTimes(1);
     const body = deliver.mock.calls[0][0];
     expect(body).toContain('42');
@@ -174,14 +182,14 @@ describe('notifyOwner', () => {
   it('propagates adapter errors', async () => {
     const deliver = vi.fn().mockRejectedValue(new Error('twilio down'));
     await expect(
-      notifyOwner('videocall_scheduled', { clientId: 1 }, { adapter: { deliver } }),
+      notifyOwner('videocall_requested', { clientId: 1 }, { adapter: { deliver } }),
     ).rejects.toThrow(/twilio down/);
   });
 
   it('never calls the real twilio SDK (verified via mock)', async () => {
     const capturing = new NoopAdapter();
     setDefaultAdapter(capturing);
-    await notifyOwner('videocall_scheduled', { clientId: 1 });
+    await notifyOwner('videocall_requested', { clientId: 1 });
     expect(mockedSendWhatsApp).not.toHaveBeenCalled();
   });
 });

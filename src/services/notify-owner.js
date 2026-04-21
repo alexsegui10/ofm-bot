@@ -21,10 +21,12 @@ const log = agentLogger('notify-owner');
 
 export const EVENT_TEMPLATES = {
   /**
-   * Sistema 1 — cliente confirma día/hora de videollamada.
+   * Sistema 1 — cliente pide videollamada. El bot pausa inmediatamente al
+   * detectar la petición (no espera a confirmación de día/hora), por eso
+   * "requested" en vez de "scheduled".
    * payload: { clientId, clientName, confirmedTime, telegramLink, recentMessages[] }
    */
-  videocall_scheduled(payload) {
+  videocall_requested(payload) {
     const {
       clientId,
       clientName = '(sin nombre)',
@@ -54,7 +56,7 @@ export const EVENT_TEMPLATES = {
     return [
       '⚠️ Cliente insiste en preguntar si eres IA',
       `Cliente: ${clientName} (id=${clientId})`,
-      `Mensaje literal: "${String(literalMessage).slice(0, 240)}"`,
+      `Mensaje literal: "${String(literalMessage).slice(0, 1000)}"`,
       'Chat pausado — usa /reactivar cuando estés listo.',
     ].join('\n');
   },
