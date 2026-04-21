@@ -1,5 +1,32 @@
 # NOTES — pendientes a mano para cuando toquemos zonas concretas
 
+## Experimento temperatura 2026-04-21 — REFUTADO y revertido
+
+**Hipótesis:** Grok variance era el driver de ruido en baselines. Bajar temp de 0.75 → 0.5 en contextos non-sexting estabilizaría baseline ≥20.
+
+**Aplicación (commit b08840d, revertido):** en `persona.js` → `temperature = /sexting/i.test(intent) ? 0.75 : 0.5`. Sexting intents mantuvieron 0.75.
+
+**Resultado full baseline:** **17/34** (< 19 referencia limpia) → aplicada regla FASE 3: revert automático.
+
+| Tipo | Escenarios | Count |
+|---|---|---|
+| RECUPERADOS (era FAIL 19/34, ahora PASS) | A5, A6 | +2 |
+| REGRESIONADOS (era PASS 19/34, ahora FAIL) | B2, C3, D4, D9 | -4 |
+| Net | | **-2** |
+
+**Conclusión:** temperatura baja NO es el driver. De hecho, **empeora** escenarios del grupo B (catálogo/detalle de fotos) y algunos del grupo D donde Persona requiere variabilidad para cubrir los matices que el evaluador busca. Recuperaciones en A5/A6 son probablemente varianza normal y no atribuibles al cambio.
+
+**Temperatura 0.75 queda como valor óptimo.** Revert automático vía `git reset --hard HEAD~1`. HEAD tras revert: `3a45aa2`.
+
+**Próximos frentes:**
+- Bajar temperatura más NO tiene sentido (0.5 ya empeoró).
+- Intentar temp 0.6 o 0.65 como punto intermedio podría probarse pero ROI bajo (variance es estructural, no reducible solo con temp).
+- Mejor inversión: atacar bugs reales pendientes (A6 handoff FASE 6, D3 §11 concession, empty-turn-1) o mejorar stability del orchestrator.
+
+---
+
+
+
 ## Estado consolidado 2026-04-21 (post cherry-picks + server fresco)
 
 Tras reintroducir `e4c3651` (A2 sanitizeElongations) y `1d54629` (B1 patrones "qué tipo de X") con server recién reiniciado y full baseline limpio:
