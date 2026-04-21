@@ -1,5 +1,35 @@
 # NOTES — pendientes a mano para cuando toquemos zonas concretas
 
+## Estado consolidado 2026-04-21 (post cherry-picks + server fresco)
+
+Tras reintroducir `e4c3651` (A2 sanitizeElongations) y `1d54629` (B1 patrones "qué tipo de X") con server recién reiniciado y full baseline limpio:
+
+**Baseline real: 19/34** (17 PASS confirmados + 2 H2/H3 que fallaron por `evaluator_error` de Anthropic API sin crédito, no por bot). Sin el bloqueo operacional de H2/H3, los fixes previos se validan en su state natural.
+
+**La referencia anterior de "23/34" era ruidosa** — consolidación de 3 logs parciales (baseline-post-commits-3 + tanda-A + tanda-B) sobre un día con variance Grok alta. Inflada por LLM variance favorable entre runs. El número real sostenible está en ~19.
+
+**PASS actual (17 confirmados + 2 eval_error):** A3, A4, A7, B2, C2, C3, D2, D4, D5, D6, D7, D9, F3, F4, G5, G6, H1, (H2*, H3* eval_error).
+**FAIL reales del bot:** A1, A2, A5, A6, B1, B3, B4, B5, C1, D1, D3, D8, F1, F2, G1.
+
+**Targets de los cherry-picks:**
+- A2 (sanitizer holaaaa): FAIL en este run. Sanitizer correcto pero escenario tuvo empty-turn-1 u otra variance.
+- B1 (patrones qué tipo): FAIL en este run. Pattern correcto pero Persona hizo pregunta vacía antes del tag list (turno 2 [2] empty, [3] tags).
+- D6 (BOT_DENIAL ya fijo previamente): PASS confirmado.
+
+**Techo estimado del bot con fixes actuales:** ~19-21/34. Variance Grok ±3 escenarios por run. Para subir techo hace falta:
+- Implementar A6 handoff (FASE 6, 6 decisiones de producto pendientes — ver NOTES sección A6).
+- D3 §11 concession (feature nueva, decisiones de producto).
+- Atacar bugs compartidos (empty-turn-1 raro, pacer loop G1).
+
+**Zona sucia identificada en orchestrator.js:**
+- Líneas 833-842 tenían dead code duplicado (ya limpiado en 1483fc4).
+- `src/agents/human-handoff.js`: placeholder que throws "FASE 6".
+- Patrón "empty turn 1" silencioso (no pipeline error, no reproducible con logging añadido en ae5138c).
+
+---
+
+
+
 ## Sesión nocturna 2026-04-20 — Resumen estructurado
 
 **Commits reales aplicados y conservados (orden cronológico):**
