@@ -8,6 +8,8 @@ export const env = {
   // Telegram
   TELEGRAM_BOT_TOKEN: get('TELEGRAM_BOT_TOKEN'),
   TELEGRAM_BUSINESS_CONNECTION_ID: get('TELEGRAM_BUSINESS_CONNECTION_ID'),
+  ADMIN_TELEGRAM_USER_ID: get('ADMIN_TELEGRAM_USER_ID'),   // Alex — ejecuta comandos admin (/pausar, /reactivar, …)
+  OWNER_TELEGRAM_USER_ID: get('OWNER_TELEGRAM_USER_ID'),   // Alba — escribe manualmente a clientes vía Business Connection
 
   // LLMs
   ANTHROPIC_API_KEY: get('ANTHROPIC_API_KEY'),

@@ -3,6 +3,7 @@ import { runMigrations, closePool } from './lib/db.js';
 import { getBot, setWebhook } from './lib/telegram.js';
 import { registerBusinessHandlers } from './handlers/business.js';
 import { registerPaymentHandlers } from './handlers/payments.js';
+import { registerAdminCommands } from './adapters/telegramAdminCommands.js';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 
@@ -15,6 +16,7 @@ async function start() {
   // 2. Register all bot event handlers
   registerBusinessHandlers(getBot());
   registerPaymentHandlers(getBot());
+  registerAdminCommands(getBot());
 
   // 3. Register Telegram webhook URL (non-fatal: tunnel may not be up yet)
   try {
