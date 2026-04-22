@@ -13,7 +13,7 @@ gestiona sexting con timer, y escala a humano vía WhatsApp para videollamadas y
 - **LLMs:**
   - Anthropic SDK — `claude-sonnet-4-6` para Router / Profile / Quality Gate / Sales / Curator / Handoff (temperatura 0.3)
   - OpenRouter (Persona) — primario `xai/grok-3-beta` (temp 0.75 catálogo / 0.9 sexting), fallback `cognitivecomputations/dolphin-mistral-24b-venice-edition`
-  - Todos los modelos intercambiables vía `.env` (`MODEL_ROUTER`, `MODEL_PERSONA`, `MODEL_PERSONA_FALLBACK`)
+  - Modelos de Persona intercambiables vía `.env` (`MODEL_PERSONA`, `MODEL_PERSONA_FALLBACK`). El Router hardcodea `claude-sonnet-4-6` en `src/agents/router.js:220` — `MODEL_ROUTER` no se lee (pendiente: o cablearlo en env.js o eliminar la referencia).
 - **Pagos:** NowPayments (crypto), PayPal, Telegram Stars (XTR)
 - **WhatsApp:** Twilio
 
@@ -84,7 +84,7 @@ Este archivo es la memoria permanente del proyecto. Tiene que mantenerse vivo pa
 
 ### Cuándo actualizar CLAUDE.md
 
-Actualizas esta archivo al final de una sesión SI (y solo si) se cumple alguna de estas condiciones:
+Actualizas este archivo al final de una sesión SI (y solo si) se cumple alguna de estas condiciones:
 
 1. **Decisión arquitectónica nueva.** Ej: "ports-and-adapters adoptado para notificaciones", "audios se guardan por telegram_file_id, no filesystem". Son decisiones que cambian cómo se construye código futuro.
 2. **Regla aprendida que debe aplicar en sesiones futuras.** Ej: "no correr round 3 de calibración del evaluador, techo confirmado", "no consolidar baselines parciales como referencia".
