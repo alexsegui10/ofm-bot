@@ -9,6 +9,7 @@ import { confirmBizumByClient } from './agents/payment-verifier.js';
 import { runSales, createOfferFromProduct, lookupProductPrice } from './agents/sales.js';
 import { resolveProduct, getCatalogText, getCategoryDetail, getPostServiceMessage } from './lib/product-catalog.js';
 import { query } from './lib/db.js';
+import { getChatStatus } from './services/chat-pause.js';
 import { isEnabled as isPaypalEnabled } from './lib/payments/paypal.js';
 import {
   formatVideoListText,
@@ -563,6 +564,33 @@ export async function handleMessage({
 
   // ── 1. Get / create client ──────────────────────────────────────────────
   const client = await getOrCreateClient(chatId, businessConnectionId, from ?? { id: fromId });
+
+  // ── 1a. Chat-pause short-circuit (SPEC-HANDOFF-V1 §2 integración) ───────
+  // Si el chat está pausado (admin /pausar, Sistema 1 videocall handoff, o
+  // Sistema 3 verificación IA seria), NO procesamos el pipeline. Guardamos
+  // el mensaje entrante igualmente para que, cuando Alex reactive, el
+  // historial quede completo y Persona pueda cargar el contexto íntegro.
+  //
+  // Fail-open si getChatStatus explota: loggear warn y continuar. Preferimos
+  // riesgo de responder durante una pausa (Alex puede re-pausar) a bloquear
+  // toda interacción por un hiccup de DB.
+  let chatStatus = 'active';
+  try {
+    chatStatus = await getChatStatus(client.id);
+  } catch (err) {
+    log.warn({ err, client_id: client.id }, 'getChatStatus failed — proceeding with pipeline (fail-open)');
+  }
+  if (chatStatus !== 'active') {
+    await saveMessage(client.id, 'user', text || '[media]');
+    log.info({
+      chat_id: chatId,
+      client_id: client.id,
+      status: chatStatus,
+      text_preview: text?.slice(0, 200) ?? null,
+      reason: 'chat_paused',
+    }, 'skipped pipeline, chat paused');
+    return { fragments: [], intent: 'chat_paused', chatStatus };
+  }
 
   // ── 1b. Active v2 sexting session short-circuit (FIX 3 — T5) ────────────
   // Si el cliente tiene una sesión v2 activa (sexting_sessions_state.ended_at

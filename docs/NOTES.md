@@ -1,5 +1,19 @@
 # NOTES — pendientes a mano para cuando toquemos zonas concretas
 
+## Sistema 2 integration — notificación a Alex cuando llega mensaje durante pausa (pendiente)
+
+Tras integrar `getChatStatus` en `handleMessage` (SPEC-HANDOFF-V1 §2), cuando un cliente escribe durante una pausa, el mensaje actualmente **solo se guarda en DB**. Alex no se entera.
+
+Mejora pendiente: notificar a Alex por WhatsApp vía `notifyOwner` cuando el cliente siga escribiendo durante la pausa. Pendiente decidir la UX:
+
+- ¿Por cada mensaje? (ruidoso si el cliente escribe varios seguidos)
+- ¿Batch con debounce de 1-2 min? (más silencioso pero introduce latencia)
+- ¿Configurable por tipo de pausa? (p.ej. `paused_awaiting_human` → notify inmediato, `paused_manual` → solo guardar)
+
+Implementar en sprint futuro tras validar comportamiento real con el primer cliente piloto. Decisión de UX de Alex requerida.
+
+
+
 ## Experimento temperatura 2026-04-21 — REFUTADO y revertido
 
 **Hipótesis:** Grok variance era el driver de ruido en baselines. Bajar temp de 0.75 → 0.5 en contextos non-sexting estabilizaría baseline ≥20.
