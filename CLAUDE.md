@@ -78,3 +78,36 @@ Payment Verifier → procesa y verifica pagos
 Content Curator → entrega contenido tras pago
 Human Handoff → escala a operador humano vía WhatsApp
 ```
+ ## Mantenimiento del CLAUDE.md (auto-actualización)
+
+Este archivo es la memoria permanente del proyecto. Tiene que mantenerse vivo para que cada sesión nueva arranque con el contexto real, no con el de hace semanas.
+
+### Cuándo actualizar CLAUDE.md
+
+Actualizas esta archivo al final de una sesión SI (y solo si) se cumple alguna de estas condiciones:
+
+1. **Decisión arquitectónica nueva.** Ej: "ports-and-adapters adoptado para notificaciones", "audios se guardan por telegram_file_id, no filesystem". Son decisiones que cambian cómo se construye código futuro.
+2. **Regla aprendida que debe aplicar en sesiones futuras.** Ej: "no correr round 3 de calibración del evaluador, techo confirmado", "no consolidar baselines parciales como referencia".
+3. **Ubicación de documento importante creado en esa sesión.** Ej: "la especificación activa vive en docs/SPEC-HANDOFF-V1.md".
+4. **Cambio en el stack, en comandos frecuentes, o en el entorno.** Ej: nueva variable .env, nuevo comando de desarrollo.
+5. **Zona sucia o bug conocido que afecta sesiones futuras.** Ej: "orchestrator.js tiene dead code documentado en docs/ORCHESTRATOR-AUDIT.md".
+
+### Cuándo NO actualizar CLAUDE.md
+
+- Cambios triviales de código (bugfixes puntuales, refactors menores).
+- Decisiones efímeras que solo aplican a la sesión actual.
+- Progresos temporales (baselines, métricas). Esos van a NOTES.md, no aquí.
+- Información que ya está en otro doc: pon pointer, no duplicado.
+
+### Cómo actualizar
+
+- Añade entradas al final de la sección correspondiente, con fecha entre paréntesis.
+- Si una entrada antigua queda obsoleta, táchala o márcala como obsoleta, no la borres (contexto histórico).
+- Si la sección ya tiene 10+ entradas similares, consolida en un resumen y archiva las antiguas en docs/CLAUDE-HISTORY.md.
+- Siempre que añadas una entrada, haz commit separado con mensaje "docs(claude.md): [qué se añadió]".
+
+### Límites duros
+
+- CLAUDE.md no supera 400 líneas. Si se pasa, consolidar.
+- No añadir información sensible (credenciales, IDs personales, datos de clientes).
+- No reescribir secciones existentes sin confirmar con Alex primero.
